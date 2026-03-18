@@ -19,7 +19,7 @@ router.get("/", async (req, res) => {
   try {
     const voyages = await Voyage.find()
       .populate("assignedCustomer", "name") // populate only the name field
-      .populate("assignedAgent", "name");   // optional: populate agent name if needed
+      .populate("assignedAgent", "companyName");   // optional: populate agent name if needed
     res.json(voyages);
   } catch (err) {
     res.status(500).json({ error: err.message });
