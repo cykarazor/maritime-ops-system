@@ -23,6 +23,7 @@ const cargoRoutes = require("./routes/cargoRoutes");
 const voyageRoutes = require("./routes/voyageRoutes");
 const userRoutes = require("./routes/userRoutes");
 const agentRoutes = require("./routes/agentRoutes");
+const financeRoutes = require("./routes/financeRoutes");
 
 // --- Mount Routes ---
 app.use("/api/invoices", invoiceRoutes);
@@ -32,6 +33,7 @@ app.use("/api/cargo", cargoRoutes);
 app.use("/api/voyages", voyageRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/agents", agentRoutes);
+app.use("/api/finance", financeRoutes);
 
 // --- Test Route ---
 app.get("/", (req, res) => {
