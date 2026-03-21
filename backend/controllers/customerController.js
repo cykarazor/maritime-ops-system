@@ -1,12 +1,12 @@
-const Supplier = require("../models/Supplier");
+const Customer = require("../models/Customer");
 const Invoice = require("../models/Invoice");
 
 
-// 🔹 CREATE Supplier
-const createSupplier = async (req, res) => {
+// 🔹 CREATE Customer
+const createCustomer = async (req, res) => {
   try {
-    const supplier = new Supplier(req.body);
-    const saved = await supplier.save();
+    const customer = new Customer(req.body);
+    const saved = await customer.save();
     res.status(201).json(saved);
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -14,14 +14,14 @@ const createSupplier = async (req, res) => {
 };
 
 
-// 🔹 GET ALL Suppliers (search + pagination + filters)
-const getSuppliers = async (req, res) => {
+// 🔹 GET ALL Customers (search + pagination + filters)
+const getCustomers = async (req, res) => {
   try {
     const { search, page = 1, limit = 10, isActive } = req.query;
 
     const query = {};
 
-    // 🔍 Search (name or country)
+    // 🔍 Search
     if (search) {
       query.$or = [
         { name: { $regex: search, $options: "i" } },
@@ -34,15 +34,15 @@ const getSuppliers = async (req, res) => {
       query.isActive = isActive === "true";
     }
 
-    const suppliers = await Supplier.find(query)
+    const customers = await Customer.find(query)
       .skip((page - 1) * limit)
       .limit(parseInt(limit))
       .sort({ createdAt: -1 });
 
-    const total = await Supplier.countDocuments(query);
+    const total = await Customer.countDocuments(query);
 
     res.json({
-      data: suppliers,
+      data: customers,
       total,
       page: parseInt(page),
       pages: Math.ceil(total / limit),
@@ -54,33 +54,33 @@ const getSuppliers = async (req, res) => {
 };
 
 
-// 🔹 GET SINGLE Supplier
-const getSupplierById = async (req, res) => {
+// 🔹 GET SINGLE Customer
+const getCustomerById = async (req, res) => {
   try {
-    const supplier = await Supplier.findById(req.params.id);
+    const customer = await Customer.findById(req.params.id);
 
-    if (!supplier) {
-      return res.status(404).json({ error: "Supplier not found" });
+    if (!customer) {
+      return res.status(404).json({ error: "Customer not found" });
     }
 
-    res.json(supplier);
+    res.json(customer);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
 
 
-// 🔹 UPDATE Supplier
-const updateSupplier = async (req, res) => {
+// 🔹 UPDATE Customer
+const updateCustomer = async (req, res) => {
   try {
-    const updated = await Supplier.findByIdAndUpdate(
+    const updated = await Customer.findByIdAndUpdate(
       req.params.id,
       req.body,
       { new: true, runValidators: true }
     );
 
     if (!updated) {
-      return res.status(404).json({ error: "Supplier not found" });
+      return res.status(404).json({ error: "Customer not found" });
     }
 
     res.json(updated);
@@ -90,43 +90,44 @@ const updateSupplier = async (req, res) => {
 };
 
 
-// 🔹 SOFT DELETE Supplier (IMPORTANT for accounting)
-const deleteSupplier = async (req, res) => {
+// 🔹 SOFT DELETE Customer
+const deleteCustomer = async (req, res) => {
   try {
-    const supplier = await Supplier.findById(req.params.id);
+    const customer = await Customer.findById(req.params.id);
 
-    if (!supplier) {
-      return res.status(404).json({ error: "Supplier not found" });
+    if (!customer) {
+      return res.status(404).json({ error: "Customer not found" });
     }
 
-    supplier.isActive = false;
-    await supplier.save();
+    customer.isActive = false;
+    await customer.save();
 
-    res.json({ message: "Supplier deactivated successfully" });
+    res.json({ message: "Customer deactivated successfully" });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
 
-// 🔹 GET SUPPLIER BALANCE WITH AGING (CORRECTED)
-const getSupplierBalance = async (req, res) => {
+
+// 🔹 GET CUSTOMER BALANCE WITH AGING (AR)
+const getCustomerBalance = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const supplier = await Supplier.findById(id);
+    const customer = await Customer.findById(id);
 
-    if (!supplier) {
-      return res.status(404).json({ error: "Supplier not found" });
+    if (!customer) {
+      return res.status(404).json({ error: "Customer not found" });
     }
 
     const invoices = await Invoice.find({
-      supplier: id,
-      type: "AP",
+      customer: id,
+      type: "AR",
     });
 
     const today = new Date();
 
-    let totalAP = 0;
+    let totalAR = 0;
     let totalPaid = 0;
     let outstanding = 0;
 
@@ -143,11 +144,11 @@ const getSupplierBalance = async (req, res) => {
 
       const balance = amount - paid;
 
-      totalAP += amount;
+      totalAR += amount;
       totalPaid += paid;
       outstanding += balance;
 
-      // ❗ Skip fully paid invoices from aging
+      // ❗ Skip fully paid invoices
       if (balance <= 0) return;
 
       const dueDate = inv.dueDate ? new Date(inv.dueDate) : null;
@@ -173,15 +174,15 @@ const getSupplierBalance = async (req, res) => {
     });
 
     res.json({
-      supplierId: id,
-      supplierName: supplier.name,
-      currency: supplier.currency || "USD",
+      customerId: id,
+      customerName: customer.name,
+      currency: customer.currency || "USD",
 
       totalInvoices: invoices.length,
 
-      totalAP,        // total billed
-      totalPaid,      // total paid
-      outstanding,    // real liability
+      totalAR,
+      totalPaid,
+      outstanding,
 
       aging,
     });
@@ -191,12 +192,13 @@ const getSupplierBalance = async (req, res) => {
   }
 };
 
+
 // 🔹 EXPORTS
 module.exports = {
-  createSupplier,
-  getSuppliers,
-  getSupplierById,
-  updateSupplier,
-  deleteSupplier,
-  getSupplierBalance,
+  createCustomer,
+  getCustomers,
+  getCustomerById,
+  updateCustomer,
+  deleteCustomer,
+  getCustomerBalance,
 };
