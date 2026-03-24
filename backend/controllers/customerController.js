@@ -2,11 +2,25 @@ const Customer = require("../models/Customer");
 const Invoice = require("../models/Invoice");
 
 
-// 🔹 CREATE Customer
+// 🔹 CREATE Customer (with duplicate protection)
 const createCustomer = async (req, res) => {
   try {
+    const { companyName } = req.body;
+
+    // Prevent duplicate company (case-insensitive)
+    if (companyName) {
+      const existing = await Customer.findOne({
+        companyName: { $regex: `^${companyName}$`, $options: "i" },
+      });
+
+      if (existing) {
+        return res.status(400).json({ error: "Customer company already exists" });
+      }
+    }
+
     const customer = new Customer(req.body);
     const saved = await customer.save();
+
     res.status(201).json(saved);
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -21,10 +35,11 @@ const getCustomers = async (req, res) => {
 
     const query = {};
 
-    // 🔍 Search
+    // 🔍 Search (UPDATED)
     if (search) {
       query.$or = [
         { name: { $regex: search, $options: "i" } },
+        { companyName: { $regex: search, $options: "i" } },
         { country: { $regex: search, $options: "i" } },
       ];
     }
@@ -73,6 +88,20 @@ const getCustomerById = async (req, res) => {
 // 🔹 UPDATE Customer
 const updateCustomer = async (req, res) => {
   try {
+    const { companyName } = req.body;
+
+    // Prevent duplicate company on update
+    if (companyName) {
+      const existing = await Customer.findOne({
+        companyName: { $regex: `^${companyName}$`, $options: "i" },
+        _id: { $ne: req.params.id },
+      });
+
+      if (existing) {
+        return res.status(400).json({ error: "Customer company already exists" });
+      }
+    }
+
     const updated = await Customer.findByIdAndUpdate(
       req.params.id,
       req.body,
@@ -90,7 +119,7 @@ const updateCustomer = async (req, res) => {
 };
 
 
-// 🔹 SOFT DELETE Customer
+// 🔹 SOFT DELETE Customer (Deactivate)
 const deleteCustomer = async (req, res) => {
   try {
     const customer = await Customer.findById(req.params.id);
@@ -103,6 +132,25 @@ const deleteCustomer = async (req, res) => {
     await customer.save();
 
     res.json({ message: "Customer deactivated successfully" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+
+// 🔹 RESTORE Customer (Activate)
+const restoreCustomer = async (req, res) => {
+  try {
+    const customer = await Customer.findById(req.params.id);
+
+    if (!customer) {
+      return res.status(404).json({ error: "Customer not found" });
+    }
+
+    customer.isActive = true;
+    await customer.save();
+
+    res.json({ message: "Customer restored successfully", customer });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -148,7 +196,7 @@ const getCustomerBalance = async (req, res) => {
       totalPaid += paid;
       outstanding += balance;
 
-      // ❗ Skip fully paid invoices
+      // Skip fully paid
       if (balance <= 0) return;
 
       const dueDate = inv.dueDate ? new Date(inv.dueDate) : null;
@@ -173,9 +221,14 @@ const getCustomerBalance = async (req, res) => {
       }
     });
 
+    // 🔄 Sync customer balance (IMPORTANT)
+    customer.balance = outstanding;
+    await customer.save();
+
     res.json({
       customerId: id,
       customerName: customer.name,
+      companyName: customer.companyName,
       currency: customer.currency || "USD",
 
       totalInvoices: invoices.length,
@@ -200,5 +253,6 @@ module.exports = {
   getCustomerById,
   updateCustomer,
   deleteCustomer,
+  restoreCustomer,
   getCustomerBalance,
 };
