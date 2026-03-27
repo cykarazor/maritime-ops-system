@@ -22,6 +22,17 @@ const userSchema = new mongoose.Schema({
     enum: ["admin", "user"],
     default: "user",
   },
+
+  // ✅ ADD THESE
+  isActive: {
+    type: Boolean,
+    default: true,
+  },
+  deletedAt: {
+    type: Date,
+    default: null,
+  },
+
   createdAt: {
     type: Date,
     default: Date.now,

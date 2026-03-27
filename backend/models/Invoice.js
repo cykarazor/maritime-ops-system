@@ -19,6 +19,11 @@ const invoiceSchema = new mongoose.Schema({
     // required if type = AP
   },
 
+  agent: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Agent"  // NEW field added for optional agent assignment
+  },
+
   invoiceNumber: { 
     type: String, 
     required: true 
@@ -67,6 +72,10 @@ const invoiceSchema = new mongoose.Schema({
   },
 
   notes: String,
+
+  // Soft delete
+  isDeleted: { type: Boolean, default: false },
+  deletedAt: { type: Date, default: null },
 
 }, { timestamps: true });
 

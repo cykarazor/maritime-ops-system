@@ -1,157 +1,151 @@
 const Agent = require("../models/Agent");
+const { successResponse, errorResponse } = require("../utils/apiResponse");
 
-// 🔹 CREATE Agent (duplicate protection like Customers)
+// =========================
+// CREATE AGENT
+// =========================
 const createAgent = async (req, res) => {
   try {
-    const { companyName } = req.body;
-
-    if (companyName) {
-      const existing = await Agent.findOne({
-        companyName: { $regex: `^${companyName}$`, $options: "i" },
-      });
-
-      if (existing) {
-        return res.status(400).json({ error: "Agent company already exists" });
-      }
-    }
-
     const agent = new Agent(req.body);
     const saved = await agent.save();
 
-    res.status(201).json(saved);
+    return successResponse(res, saved, "Agent created successfully", 201);
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    console.error("AgentControllerError:", err);
+    return errorResponse(res, err.message, 400);
   }
 };
 
-
-// 🔹 GET ALL Agents (MATCH CUSTOMERS — NO FILTERING)
+// =========================
+// GET ALL AGENTS
+// =========================
 const getAgents = async (req, res) => {
   try {
-    const { search, page = 1, limit = 10, isActive } = req.query;
+    const { page = 1, limit = 10, search, status } = req.query;
 
     const query = {};
+    if (status === "active") query.isActive = true;
+    if (status === "inactive") query.isActive = false;
 
-    // 🔍 Search
     if (search) {
       query.$or = [
         { companyName: { $regex: search, $options: "i" } },
         { contactPerson: { $regex: search, $options: "i" } },
-        { assignedIsland: { $regex: search, $options: "i" } },
+        { email: { $regex: search, $options: "i" } },
       ];
     }
 
-    // 🔘 Active filter (OPTIONAL — same as Customers)
-    if (isActive !== undefined) {
-      query.isActive = isActive === "true";
-    }
+    const parsedLimit = parseInt(limit);
+    const parsedPage = parseInt(page);
 
     const agents = await Agent.find(query)
-      .skip((page - 1) * limit)
-      .limit(parseInt(limit))
+      .skip((parsedPage - 1) * parsedLimit)
+      .limit(parsedLimit)
       .sort({ createdAt: -1 });
 
     const total = await Agent.countDocuments(query);
 
-    res.json({
-      data: agents,
+    return successResponse(res, {
+      agents: agents || [],
       total,
-      page: parseInt(page),
-      pages: Math.ceil(total / limit),
-    });
+      page: parsedPage,
+      pages: Math.ceil(total / parsedLimit),
+    }, "Agents fetched successfully");
 
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("AgentControllerError:", err);
+    return errorResponse(res, err.message, 500);
   }
 };
 
-
-// 🔹 GET SINGLE
+// =========================
+// GET SINGLE AGENT
+// =========================
 const getAgentById = async (req, res) => {
   try {
-    const agent = await Agent.findById(req.params.id);
+    const agent = await Agent.findOne({
+      _id: req.params.id,
+      isActive: true, // ✅ FIXED
+    });
 
     if (!agent) {
-      return res.status(404).json({ error: "Agent not found" });
+      return errorResponse(res, "Agent not found", 404);
     }
 
-    res.json(agent);
+    return successResponse(res, agent, "Agent fetched successfully");
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("AgentControllerError:", err);
+    return errorResponse(res, err.message, 500);
   }
 };
 
-
-// 🔹 UPDATE
+// =========================
+// UPDATE AGENT
+// =========================
 const updateAgent = async (req, res) => {
   try {
-    const { companyName } = req.body;
-
-    if (companyName) {
-      const existing = await Agent.findOne({
-        companyName: { $regex: `^${companyName}$`, $options: "i" },
-        _id: { $ne: req.params.id },
-      });
-
-      if (existing) {
-        return res.status(400).json({ error: "Agent company already exists" });
-      }
-    }
-
-    const updated = await Agent.findByIdAndUpdate(
-      req.params.id,
+    const updated = await Agent.findOneAndUpdate(
+      { _id: req.params.id, isActive: true }, // ✅ FIXED
       req.body,
       { new: true, runValidators: true }
     );
 
     if (!updated) {
-      return res.status(404).json({ error: "Agent not found" });
+      return errorResponse(res, "Agent not found", 404);
     }
 
-    res.json(updated);
+    return successResponse(res, updated, "Agent updated successfully");
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    console.error("AgentControllerError:", err);
+    return errorResponse(res, err.message, 400);
   }
 };
 
-
-// 🔹 SOFT DELETE (Deactivate)
+// =========================
+// DELETE AGENT (SOFT DELETE)
+// =========================
 const deleteAgent = async (req, res) => {
   try {
     const agent = await Agent.findById(req.params.id);
 
-    if (!agent) {
-      return res.status(404).json({ error: "Agent not found" });
+    if (!agent || !agent.isActive) {
+      return errorResponse(res, "Agent not found", 404);
     }
 
     agent.isActive = false;
+    agent.deletedAt = new Date();
+
     await agent.save();
 
-    res.json({ message: "Agent deactivated successfully" });
+    return successResponse(res, agent, "Agent deactivated successfully");
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("AgentControllerError:", err);
+    return errorResponse(res, err.message, 500);
   }
 };
 
-
-// 🔹 RESTORE (Activate) — MATCH CUSTOMERS ROUTE STYLE
+// =========================
+// RESTORE AGENT
+// =========================
 const restoreAgent = async (req, res) => {
   try {
     const agent = await Agent.findById(req.params.id);
 
-    if (!agent) {
-      return res.status(404).json({ error: "Agent not found" });
+    if (!agent || agent.isActive) {
+      return errorResponse(res, "Agent not found or already active", 404);
     }
 
     agent.isActive = true;
+    agent.deletedAt = null;
+
     await agent.save();
 
-    res.json({ message: "Agent restored successfully", agent });
+    return successResponse(res, agent, "Agent restored successfully");
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("AgentControllerError:", err);
+    return errorResponse(res, err.message, 500);
   }
 };
-
 
 module.exports = {
   createAgent,

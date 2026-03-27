@@ -31,6 +31,6 @@ router.put("/:id", updateVoyage);
 router.delete("/:id", deleteVoyage);
 
 //RESTORE
-router.patch("/restore/:id", restoreVoyage);
+router.put("/:id/restore", restoreVoyage);
 
 module.exports = router;

@@ -10,10 +10,14 @@ const {
   restoreAgent,
 } = require("../controllers/agentController");
 
+// =========================
+// ROUTES
+// =========================
+
 // CREATE
 router.post("/", createAgent);
 
-// GET ALL
+// GET ALL (with pagination + search)
 router.get("/", getAgents);
 
 // GET ONE
@@ -22,10 +26,10 @@ router.get("/:id", getAgentById);
 // UPDATE
 router.put("/:id", updateAgent);
 
-// DELETE (soft)
+// DELETE (soft delete)
 router.delete("/:id", deleteAgent);
 
-// RESTORE ✅ FIXED ROUTE
-router.patch("/:id/restore", restoreAgent);
+// RESTORE
+router.put("/:id/restore", restoreAgent);
 
 module.exports = router;

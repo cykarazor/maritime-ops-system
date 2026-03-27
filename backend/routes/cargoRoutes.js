@@ -7,27 +7,29 @@ const {
   getCargoById,
   updateCargo,
   deleteCargo,
-  restoreCargo
+  restoreCargo,
 } = require("../controllers/cargoController");
 
+// =========================
+// ROUTES
+// =========================
 
-// 🔹 CREATE
+// CREATE
 router.post("/", createCargo);
 
-// 🔹 READ ALL (with population handled in controller)
+// GET ALL (with pagination + search)
 router.get("/", getCargo);
 
-// 🔹 READ SINGLE
+// GET ONE
 router.get("/:id", getCargoById);
 
-// 🔹 UPDATE
+// UPDATE
 router.put("/:id", updateCargo);
 
-// 🔹 SOFT DELETE (Deactivate)
+// DELETE (soft delete)
 router.delete("/:id", deleteCargo);
 
-// 🔹 RESTORE
-router.patch("/:id/restore", restoreCargo);
-
+// RESTORE
+router.put("/:id/restore", restoreCargo);
 
 module.exports = router;

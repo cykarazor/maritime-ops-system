@@ -8,32 +8,24 @@ const {
   updateCustomer,
   deleteCustomer,
   restoreCustomer,
-  getCustomerBalance,
 } = require("../controllers/customerController");
 
-const Customer = require("../models/Customer");
-const Invoice = require("../models/Invoice");
-
-
-// 🔹 CREATE
+// CREATE
 router.post("/", createCustomer);
 
-// 🔹 READ ALL (search + pagination + filters)
+// GET ALL (with pagination + search)
 router.get("/", getCustomers);
 
-// 🔹 CUSTOMER BALANCE (AR) ⚠️ MUST COME BEFORE :id
-router.get("/:id/balance", getCustomerBalance);
-
-// 🔹 READ SINGLE
+// GET ONE
 router.get("/:id", getCustomerById);
 
-// 🔹 UPDATE
+// UPDATE
 router.put("/:id", updateCustomer);
 
-// 🔹 SOFT DELETE (Deactivate)
-router.delete("/:id", deleteCustomer);   // soft delete
+// DELETE (soft delete)
+router.delete("/:id", deleteCustomer);
 
-// 🔹 RESTORE (Activate)
-router.patch("/:id/restore", restoreCustomer);
+// RESTORE
+router.put("/:id/restore", restoreCustomer);
 
 module.exports = router;

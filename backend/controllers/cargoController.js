@@ -1,94 +1,150 @@
 const Cargo = require("../models/Cargo");
+const { successResponse, errorResponse } = require("../utils/apiResponse");
 
-// CREATE
+// =========================
+// CREATE CARGO
+// =========================
 const createCargo = async (req, res) => {
   try {
-    const cargo = await Cargo.create(req.body);
-    res.status(201).json(cargo);
+    const cargo = new Cargo(req.body);
+    const saved = await cargo.save();
+
+    return successResponse(res, saved, "Cargo created successfully", 201);
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    console.error("CargoControllerError:", err);
+    return errorResponse(res, err.message, 400);
   }
 };
 
-// GET ALL (WITH POPULATION 🔥)
+// =========================
+// GET ALL CARGO ITEMS
+// =========================
 const getCargo = async (req, res) => {
   try {
-    const cargo = await Cargo.find()
-      .populate("customer", "name companyName")
-      .populate("voyage", "voyageNumber vesselName")
-      .sort({ createdAt: -1 });
+    const { page = 1, limit = 10, search, status } = req.query;
 
-    res.json({ data: cargo });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
+    const query = {};
+    if (status === "active") query.isActive = true;
+    if (status === "inactive") query.isActive = false;
 
-// GET SINGLE (WITH POPULATION)
-const getCargoById = async (req, res) => {
-  try {
-    const cargo = await Cargo.findById(req.params.id)
-      .populate("customer", "name companyName")
-      .populate("voyage", "voyageNumber vesselName");
-
-    if (!cargo) {
-      return res.status(404).json({ error: "Cargo not found" });
+    if (search) {
+      query.$or = [
+        { type: { $regex: search, $options: "i" } },
+        { remarks: { $regex: search, $options: "i" } },
+      ];
     }
 
-    res.json(cargo);
+    const parsedLimit = parseInt(limit);
+    const parsedPage = parseInt(page);
+
+    const cargoItems = await Cargo.find(query)
+      .populate("voyage", "vesselName voyageNumber")
+      .populate("customer", "companyName name")    
+      .skip((parsedPage - 1) * parsedLimit)
+      .limit(parsedLimit)
+      .sort({ createdAt: -1 });
+
+    const total = await Cargo.countDocuments(query);
+
+    return successResponse(res, {
+      cargo: cargoItems || [],
+      total,
+      page: parsedPage,
+      pages: Math.ceil(total / parsedLimit),
+    }, "Cargo fetched successfully");
+
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("CargoControllerError:", err);
+    return errorResponse(res, err.message, 500);
   }
 };
 
-// UPDATE
+// =========================
+// GET SINGLE CARGO ITEM
+// =========================
+const getCargoById = async (req, res) => {
+  try {
+    const cargo = await Cargo.findOne({
+      _id: req.params.id,
+      isActive: true, // ✅ FIXED
+    }).populate("voyage", "vesselName voyageNumber");
+
+    if (!cargo) {
+      return errorResponse(res, "Cargo not found", 404);
+    }
+
+    return successResponse(res, cargo, "Cargo fetched successfully");
+  } catch (err) {
+    console.error("CargoControllerError:", err);
+    return errorResponse(res, err.message, 500);
+  }
+};
+
+// =========================
+// UPDATE CARGO ITEM
+// =========================
 const updateCargo = async (req, res) => {
   try {
-    const cargo = await Cargo.findByIdAndUpdate(
-      req.params.id,
+    const updated = await Cargo.findOneAndUpdate(
+      { _id: req.params.id, isActive: true }, // ✅ FIXED
       req.body,
-      { new: true }
-    );
+      { new: true, runValidators: true }
+    ).populate("voyage", "vesselName voyageNumber");
 
-    res.json(cargo);
+    if (!updated) {
+      return errorResponse(res, "Cargo not found or inactive", 404);
+    }
+
+    return successResponse(res, updated, "Cargo updated successfully");
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    console.error("CargoControllerError:", err);
+    return errorResponse(res, err.message, 400);
   }
 };
 
-// SOFT DELETE
+// =========================
+// DELETE CARGO ITEM (SOFT DELETE)
+// =========================
 const deleteCargo = async (req, res) => {
   try {
     const cargo = await Cargo.findById(req.params.id);
 
-    if (!cargo) {
-      return res.status(404).json({ error: "Cargo not found" });
+    if (!cargo || !cargo.isActive) {
+      return errorResponse(res, "Cargo not found", 404);
     }
 
     cargo.isActive = false;
+    cargo.deletedAt = new Date();
+
     await cargo.save();
 
-    res.json({ message: "Cargo deactivated" });
+    return successResponse(res, cargo, "Cargo deactivated successfully");
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("CargoControllerError:", err);
+    return errorResponse(res, err.message, 500);
   }
 };
 
-// RESTORE
+// =========================
+// RESTORE CARGO ITEM
+// =========================
 const restoreCargo = async (req, res) => {
   try {
     const cargo = await Cargo.findById(req.params.id);
 
-    if (!cargo) {
-      return res.status(404).json({ error: "Cargo not found" });
+    if (!cargo || cargo.isActive) {
+      return errorResponse(res, "Cargo not found or already active", 404);
     }
 
     cargo.isActive = true;
+    cargo.deletedAt = null;
+
     await cargo.save();
 
-    res.json({ message: "Cargo restored" });
+    return successResponse(res, cargo, "Cargo restored successfully");
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("CargoControllerError:", err);
+    return errorResponse(res, err.message, 500);
   }
 };
 
@@ -98,5 +154,5 @@ module.exports = {
   getCargoById,
   updateCargo,
   deleteCargo,
-  restoreCargo
+  restoreCargo,
 };

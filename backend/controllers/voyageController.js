@@ -1,4 +1,5 @@
 const Voyage = require("../models/Voyage");
+const { successResponse, errorResponse } = require("../utils/apiResponse");
 
 // =========================
 // CREATE VOYAGE
@@ -8,17 +9,14 @@ const createVoyage = async (req, res) => {
     const voyage = new Voyage(req.body);
     const saved = await voyage.save();
 
-    res.status(201).json({
-      success: true,
-      data: saved,
-    });
+    return successResponse(res, saved, "Voyage created successfully", 201);
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    return errorResponse(res, err.message, 400);
   }
 };
 
 // =========================
-// GET ALL VOYAGES (FIXED + POPULATE + SAFE)
+// GET ALL VOYAGES
 // =========================
 const getVoyages = async (req, res) => {
   try {
@@ -28,17 +26,13 @@ const getVoyages = async (req, res) => {
       search,
       vesselName,
       departurePort,
+      status,
     } = req.query;
 
     const query = {};
 
-    if (req.query.status === "active") {
-      query.isDeleted = false;
-    }
-
-    if (req.query.status === "inactive") {
-      query.isDeleted = true;
-    }
+    if (status === "active") query.isActive = true;
+    if (status === "inactive") query.isActive = false;
 
     if (search) {
       query.$or = [
@@ -55,25 +49,27 @@ const getVoyages = async (req, res) => {
       query.loadPort = { $regex: departurePort, $options: "i" };
     }
 
+    const parsedLimit = parseInt(limit);
+    const parsedPage = parseInt(page);
+
     const voyages = await Voyage.find(query)
       .populate("assignedCustomer", "name")
       .populate("assignedAgent", "companyName")
-      .skip((page - 1) * limit)
-      .limit(parseInt(limit))
+      .skip((parsedPage - 1) * parsedLimit)
+      .limit(parsedLimit)
       .sort({ createdAt: -1 });
 
     const total = await Voyage.countDocuments(query);
 
-    res.json({
-      success: true,
-      data: voyages,
+    return successResponse(res, {
+      voyages: voyages || [], // 🔒 always array
       total,
-      page: parseInt(page),
-      pages: Math.ceil(total / limit),
-    });
+      page: parsedPage,
+      pages: Math.ceil(total / parsedLimit),
+    }, "Voyages fetched successfully");
 
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    return errorResponse(res, err.message, 500);
   }
 };
 
@@ -84,21 +80,18 @@ const getVoyageById = async (req, res) => {
   try {
     const voyage = await Voyage.findOne({
       _id: req.params.id,
-      isDeleted: { $ne: true },
+      isActive: true, // ✅ FIXED
     })
       .populate("assignedCustomer", "name")
       .populate("assignedAgent", "companyName");
 
     if (!voyage) {
-      return res.status(404).json({ error: "Voyage not found" });
+      return errorResponse(res, "Voyage not found", 404);
     }
 
-    res.json({
-      success: true,
-      data: voyage,
-    });
+    return successResponse(res, voyage, "Voyage fetched successfully");
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    return errorResponse(res, err.message, 500);
   }
 };
 
@@ -110,7 +103,7 @@ const updateVoyage = async (req, res) => {
     const updated = await Voyage.findOneAndUpdate(
       {
         _id: req.params.id,
-        isDeleted: { $ne: true },
+        isActive: true,
       },
       req.body,
       { new: true, runValidators: true }
@@ -119,15 +112,12 @@ const updateVoyage = async (req, res) => {
       .populate("assignedAgent", "companyName");
 
     if (!updated) {
-      return res.status(404).json({ error: "Voyage not found" });
+      return errorResponse(res, "Voyage not found", 404);
     }
 
-    res.json({
-      success: true,
-      data: updated,
-    });
+    return successResponse(res, updated, "Voyage updated successfully");
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    return errorResponse(res, err.message, 400);
   }
 };
 
@@ -138,48 +128,40 @@ const deleteVoyage = async (req, res) => {
   try {
     const voyage = await Voyage.findById(req.params.id);
 
-    if (!voyage || voyage.isDeleted) {
-      return res.status(404).json({ error: "Voyage not found" });
+    if (!voyage || !voyage.isActive) {
+      return errorResponse(res, "Voyage not found", 404);
     }
 
-    voyage.isDeleted = true;
+    voyage.isActive = false;
     voyage.deletedAt = new Date();
 
     await voyage.save();
 
-    res.json({
-      success: true,
-      message: "Voyage deactivated successfully",
-    });
+    return successResponse(res, voyage, "Voyage deactivated successfully");
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    return errorResponse(res, err.message, 500);
   }
 };
 
 // =========================
 // RESTORE VOYAGE
 // =========================
-
 const restoreVoyage = async (req, res) => {
   try {
     const voyage = await Voyage.findById(req.params.id);
 
-    if (!voyage || !voyage.isDeleted) {
-      return res.status(404).json({ error: "Voyage not found or already active" });
+    if (!voyage || voyage.isActive) {
+      return errorResponse(res, "Voyage not found or already active", 404);
     }
 
-    voyage.isDeleted = false;
+    voyage.isActive = false;
     voyage.deletedAt = null;
 
     await voyage.save();
 
-    res.json({
-      success: true,
-      message: "Voyage restored successfully",
-      data: voyage,
-    });
+    return successResponse(res, voyage, "Voyage restored successfully");
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    return errorResponse(res, err.message, 500);
   }
 };
 

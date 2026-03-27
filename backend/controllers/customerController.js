@@ -1,252 +1,152 @@
 const Customer = require("../models/Customer");
-const Invoice = require("../models/Invoice");
+const { successResponse, errorResponse } = require("../utils/apiResponse");
 
-
-// 🔹 CREATE Customer (with duplicate protection)
+// =========================
+// CREATE CUSTOMER
+// =========================
 const createCustomer = async (req, res) => {
   try {
-    const { companyName } = req.body;
-
-    // Prevent duplicate company (case-insensitive)
-    if (companyName) {
-      const existing = await Customer.findOne({
-        companyName: { $regex: `^${companyName}$`, $options: "i" },
-      });
-
-      if (existing) {
-        return res.status(400).json({ error: "Customer company already exists" });
-      }
-    }
-
     const customer = new Customer(req.body);
     const saved = await customer.save();
 
-    res.status(201).json(saved);
+    return successResponse(res, saved, "Customer created successfully", 201);
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    console.error("CustomerControllerError:", err);
+    return errorResponse(res, err.message, 400);
   }
 };
 
-
-// 🔹 GET ALL Customers (search + pagination + filters)
+// =========================
+// GET ALL CUSTOMERS
+// =========================
 const getCustomers = async (req, res) => {
   try {
-    const { search, page = 1, limit = 10, isActive } = req.query;
+    const { page = 1, limit = 10, search, status } = req.query;
 
     const query = {};
+    if (status === "active") query.isActive = true;
+    if (status === "inactive") query.isActive = false;
 
-    // 🔍 Search (UPDATED)
     if (search) {
       query.$or = [
         { name: { $regex: search, $options: "i" } },
+        { email: { $regex: search, $options: "i" } },
         { companyName: { $regex: search, $options: "i" } },
-        { country: { $regex: search, $options: "i" } },
       ];
     }
 
-    // 🔘 Active filter
-    if (isActive !== undefined) {
-      query.isActive = isActive === "true";
-    }
+    const parsedLimit = parseInt(limit);
+    const parsedPage = parseInt(page);
 
     const customers = await Customer.find(query)
-      .skip((page - 1) * limit)
-      .limit(parseInt(limit))
+      .skip((parsedPage - 1) * parsedLimit)
+      .limit(parsedLimit)
       .sort({ createdAt: -1 });
 
     const total = await Customer.countDocuments(query);
 
-    res.json({
-      data: customers,
+    return successResponse(res, {
+      customers: customers || [], // always array
       total,
-      page: parseInt(page),
-      pages: Math.ceil(total / limit),
-    });
+      page: parsedPage,
+      pages: Math.ceil(total / parsedLimit),
+    }, "Customers fetched successfully");
 
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("CustomerControllerError:", err);
+    return errorResponse(res, err.message, 500);
   }
 };
 
-
-// 🔹 GET SINGLE Customer
+// =========================
+// GET SINGLE CUSTOMER
+// =========================
 const getCustomerById = async (req, res) => {
   try {
-    const customer = await Customer.findById(req.params.id);
+    const customer = await Customer.findOne({
+      _id: req.params.id,
+      isActive: true, // ✅ FIXED
+    });
 
     if (!customer) {
-      return res.status(404).json({ error: "Customer not found" });
+      return errorResponse(res, "Customer not found", 404);
     }
 
-    res.json(customer);
+    return successResponse(res, customer, "Customer fetched successfully");
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("CustomerControllerError:", err);
+    return errorResponse(res, err.message, 500);
   }
 };
 
-
-// 🔹 UPDATE Customer
+// =========================
+// UPDATE CUSTOMER
+// =========================
 const updateCustomer = async (req, res) => {
   try {
-    const { companyName } = req.body;
-
-    // Prevent duplicate company on update
-    if (companyName) {
-      const existing = await Customer.findOne({
-        companyName: { $regex: `^${companyName}$`, $options: "i" },
-        _id: { $ne: req.params.id },
-      });
-
-      if (existing) {
-        return res.status(400).json({ error: "Customer company already exists" });
-      }
-    }
-
-    const updated = await Customer.findByIdAndUpdate(
-      req.params.id,
+    const updated = await Customer.findOneAndUpdate(
+      { _id: req.params.id, isActive: true }, // ✅ FIXED
       req.body,
       { new: true, runValidators: true }
     );
 
     if (!updated) {
-      return res.status(404).json({ error: "Customer not found" });
+      return errorResponse(res, "Customer not found", 404);
     }
 
-    res.json(updated);
+    return successResponse(res, updated, "Customer updated successfully");
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    console.error("CustomerControllerError:", err);
+    return errorResponse(res, err.message, 400);
   }
 };
 
-
-// 🔹 SOFT DELETE Customer (Deactivate)
+// =========================
+// DELETE CUSTOMER (SOFT DELETE)
+// =========================
 const deleteCustomer = async (req, res) => {
   try {
     const customer = await Customer.findById(req.params.id);
 
-    if (!customer) {
-      return res.status(404).json({ error: "Customer not found" });
+    if (!customer || !customer.isActive) {
+      return errorResponse(res, "Customer not found or already inactive", 404);
     }
 
     customer.isActive = false;
+    customer.deletedAt = new Date();
+
     await customer.save();
 
-    res.json({ message: "Customer deactivated successfully" });
+    return successResponse(res, customer, "Customer deactivated successfully");
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("CustomerControllerError:", err);
+    return errorResponse(res, err.message, 500);
   }
 };
 
-
-// 🔹 RESTORE Customer (Activate)
+// =========================
+// RESTORE CUSTOMER
+// =========================
 const restoreCustomer = async (req, res) => {
   try {
     const customer = await Customer.findById(req.params.id);
 
-    if (!customer) {
-      return res.status(404).json({ error: "Customer not found" });
+    if (!customer || customer.isActive) {
+      return errorResponse(res, "Customer not found or already active", 404);
     }
 
     customer.isActive = true;
+    customer.deletedAt = null;
+
     await customer.save();
 
-    res.json({ message: "Customer restored successfully", customer });
+    return successResponse(res, customer, "Customer restored successfully");
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("CustomerControllerError:", err);
+    return errorResponse(res, err.message, 500);
   }
 };
 
-
-// 🔹 GET CUSTOMER BALANCE WITH AGING (AR)
-const getCustomerBalance = async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    const customer = await Customer.findById(id);
-
-    if (!customer) {
-      return res.status(404).json({ error: "Customer not found" });
-    }
-
-    const invoices = await Invoice.find({
-      customer: id,
-      type: "AR",
-    });
-
-    const today = new Date();
-
-    let totalAR = 0;
-    let totalPaid = 0;
-    let outstanding = 0;
-
-    const aging = {
-      "0-30": 0,
-      "31-60": 0,
-      "61-90": 0,
-      "90+": 0,
-    };
-
-    invoices.forEach((inv) => {
-      const amount = inv.amount || 0;
-      const paid = inv.amountPaid || 0;
-
-      const balance = amount - paid;
-
-      totalAR += amount;
-      totalPaid += paid;
-      outstanding += balance;
-
-      // Skip fully paid
-      if (balance <= 0) return;
-
-      const dueDate = inv.dueDate ? new Date(inv.dueDate) : null;
-
-      let daysOverdue = 0;
-
-      if (dueDate) {
-        const diffTime = today - dueDate;
-        daysOverdue = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-      } else {
-        daysOverdue = 999;
-      }
-
-      if (daysOverdue <= 30) {
-        aging["0-30"] += balance;
-      } else if (daysOverdue <= 60) {
-        aging["31-60"] += balance;
-      } else if (daysOverdue <= 90) {
-        aging["61-90"] += balance;
-      } else {
-        aging["90+"] += balance;
-      }
-    });
-
-    // 🔄 Sync customer balance (IMPORTANT)
-    customer.balance = outstanding;
-    await customer.save();
-
-    res.json({
-      customerId: id,
-      customerName: customer.name,
-      companyName: customer.companyName,
-      currency: customer.currency || "USD",
-
-      totalInvoices: invoices.length,
-
-      totalAR,
-      totalPaid,
-      outstanding,
-
-      aging,
-    });
-
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
-
-
-// 🔹 EXPORTS
 module.exports = {
   createCustomer,
   getCustomers,
@@ -254,5 +154,4 @@ module.exports = {
   updateCustomer,
   deleteCustomer,
   restoreCustomer,
-  getCustomerBalance,
 };
