@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const supplierSchema = new mongoose.Schema(
   {
     // 🔹 Basic Info
-    name: {
+    companyName: {
       type: String,
       required: true,
       trim: true,

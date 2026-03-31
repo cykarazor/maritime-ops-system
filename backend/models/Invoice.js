@@ -74,7 +74,7 @@ const invoiceSchema = new mongoose.Schema({
   notes: String,
 
   // Soft delete
-  isDeleted: { type: Boolean, default: false },
+  isActive: { type: Boolean, default: true, index: true },
   deletedAt: { type: Date, default: null },
 
 }, { timestamps: true });

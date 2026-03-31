@@ -146,11 +146,8 @@ const updateInvoice = async (req, res) => {
 const deleteInvoice = async (req, res) => {
   try {
     const invoice = await Invoice.findById(req.params.id);
-
-    if (!invoice || !invoice.isActive) {
-      return errorResponse(res, "Invoice not found", 404);
-    }
-
+    if (!invoice) return errorResponse(res, "Invoice not found", 404);
+    
     invoice.isActive = false;
     invoice.deletedAt = new Date();
 
@@ -170,7 +167,7 @@ const restoreInvoice = async (req, res) => {
   try {
     const invoice = await Invoice.findById(req.params.id);
 
-    if (!invoice || !invoice.isActive) {
+    if (!invoice || invoice.isActive) {
       return errorResponse(res, "Invoice not found or already active", 404);
     }
 
