@@ -11,6 +11,7 @@ const createVoyage = async (req, res) => {
 
     return successResponse(res, saved, "Voyage created successfully", 201);
   } catch (err) {
+    console.error("VoyageControllerError:", err);
     return errorResponse(res, err.message, 400);
   }
 };
@@ -62,13 +63,14 @@ const getVoyages = async (req, res) => {
     const total = await Voyage.countDocuments(query);
 
     return successResponse(res, {
-      voyages: voyages || [], // 🔒 always array
+      voyages: voyages || [],
       total,
       page: parsedPage,
       pages: Math.ceil(total / parsedLimit),
     }, "Voyages fetched successfully");
 
   } catch (err) {
+    console.error("VoyageControllerError:", err);
     return errorResponse(res, err.message, 500);
   }
 };
@@ -80,7 +82,7 @@ const getVoyageById = async (req, res) => {
   try {
     const voyage = await Voyage.findOne({
       _id: req.params.id,
-      isActive: true, // ✅ FIXED
+      isActive: true,
     })
       .populate("assignedCustomer", "name")
       .populate("assignedAgent", "companyName");
@@ -91,6 +93,7 @@ const getVoyageById = async (req, res) => {
 
     return successResponse(res, voyage, "Voyage fetched successfully");
   } catch (err) {
+    console.error("VoyageControllerError:", err);
     return errorResponse(res, err.message, 500);
   }
 };
@@ -101,10 +104,7 @@ const getVoyageById = async (req, res) => {
 const updateVoyage = async (req, res) => {
   try {
     const updated = await Voyage.findOneAndUpdate(
-      {
-        _id: req.params.id,
-        isActive: true,
-      },
+      { _id: req.params.id, isActive: true },
       req.body,
       { new: true, runValidators: true }
     )
@@ -117,6 +117,7 @@ const updateVoyage = async (req, res) => {
 
     return successResponse(res, updated, "Voyage updated successfully");
   } catch (err) {
+    console.error("VoyageControllerError:", err);
     return errorResponse(res, err.message, 400);
   }
 };
@@ -129,7 +130,7 @@ const deleteVoyage = async (req, res) => {
     const voyage = await Voyage.findById(req.params.id);
 
     if (!voyage || !voyage.isActive) {
-      return errorResponse(res, "Voyage not found", 404);
+      return errorResponse(res, "Voyage not found or already inactive", 404);
     }
 
     voyage.isActive = false;
@@ -139,6 +140,7 @@ const deleteVoyage = async (req, res) => {
 
     return successResponse(res, voyage, "Voyage deactivated successfully");
   } catch (err) {
+    console.error("VoyageControllerError:", err);
     return errorResponse(res, err.message, 500);
   }
 };
@@ -154,13 +156,14 @@ const restoreVoyage = async (req, res) => {
       return errorResponse(res, "Voyage not found or already active", 404);
     }
 
-    voyage.isActive = false;
+    voyage.isActive = true;
     voyage.deletedAt = null;
 
     await voyage.save();
 
     return successResponse(res, voyage, "Voyage restored successfully");
   } catch (err) {
+    console.error("VoyageControllerError:", err);
     return errorResponse(res, err.message, 500);
   }
 };
