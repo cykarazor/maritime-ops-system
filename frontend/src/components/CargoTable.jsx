@@ -5,21 +5,10 @@ const CargoTable = ({ cargo, onEdit, onDelete, onRestore }) => {
 
   return (
     <div
-      style={{
-        overflowX: "auto",
-        marginTop: "20px",
-        WebkitOverflowScrolling: "touch",
-      }}
+      className="table-container"
     >
       <table
-        border="1"
-        cellPadding="10"
-        style={{
-          width: "100%",
-          minWidth: "1100px",
-          borderCollapse: "collapse",
-          fontSize: "14px", // ✅ ADDED: better readability
-        }}
+        className="data-table"
       >
         {/* ================= HEADER STYLING ADDED ================= */}
         <thead style={{ backgroundColor: "#f5f5f5" }}>
