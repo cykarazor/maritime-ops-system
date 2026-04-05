@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 
-const AgentForm = ({ onSubmit, initialData }) => {
+const AgentForm = ({ onSubmit, initialData, onCancel }) => {
+  
   const [formData, setFormData] = useState({
     companyName: "",
     assignedIsland: "",
@@ -10,6 +11,8 @@ const AgentForm = ({ onSubmit, initialData }) => {
     notes: ""
   });
 
+  //Detect Edit Mode and Populate Form
+  const isEdit = !!initialData;
   
   useEffect(() => {
     if (initialData) {
@@ -34,8 +37,7 @@ const AgentForm = ({ onSubmit, initialData }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     onSubmit(formData);
-
-    
+   
       setFormData({
         companyName: "",
         assignedIsland: "",
@@ -47,23 +49,14 @@ const AgentForm = ({ onSubmit, initialData }) => {
     
   };
 
+
   return (
     <form
       onSubmit={handleSubmit}
-
-      // ❌ OLD INLINE STYLE
-      // style={{ marginBottom: "20px" }}
-
-      // ✅ NEW STANDARD FORM CONTAINER
       className="form-container"
     >
       {/* ✅ NEW: FORM TITLE */}
       <h3>{initialData ? "Edit Agent" : "Create Agent"}</h3>
-
-      {/* ❌ OLD INPUT
-      <input ... />
-      */}
-
       {/* ✅ NEW STRUCTURED FORM */}
 
       <div className="form-group">
@@ -122,17 +115,23 @@ const AgentForm = ({ onSubmit, initialData }) => {
         />
       </div>
 
-      {/* ❌ OLD BUTTON
-      <button type="submit">
-        {initialData ? "Update Agent" : "Create Agent"}
-      </button>
-      */}
-
       {/* ✅ NEW STANDARD BUTTON */}
       <div className="form-actions">
-        <button type="submit" className="btn btn-primary">
-          {initialData ? "Update Agent" : "Create Agent"}
+
+        {/* Cancel Button */}
+        <button
+          type="button"
+          className="btn btn-secondary"
+          onClick={onCancel}
+        >
+          Cancel
         </button>
+
+        {/* Submit Button (Dynamic Save/Update) */}
+        <button type="submit" className="btn btn-primary">
+          {isEdit ? "Update Agent" : "Save Agent"}
+        </button>
+
       </div>
     </form>
   );

@@ -9,12 +9,15 @@ import {
   createSupplier,
   updateSupplier,
   deleteSupplier,
-  restoreSupplier,
+  restoreSupplier
 } from "../utils/api";
 
 const SupplierPage = () => {
   const [suppliers, setSuppliers] = useState([]);
-  const [editing, setEditing] = useState(null);
+  const [editingSupplier, setEditingSupplier] = useState(null);
+
+  // ✅ STANDARDIZED FORM STATE
+  const [showForm, setShowForm] = useState(false);
 
   // =========================
   // PAGINATION STATE
@@ -29,18 +32,17 @@ const SupplierPage = () => {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // =========================
-  // FETCH SUPPLIERS (STANDARDIZED)
+  // FETCH SUPPLIERS
   // =========================
   useEffect(() => {
     const fetchSuppliers = async () => {
       try {
-        const res = await getSuppliers({ page, limit });
+        const response = await getSuppliers({ page, limit });
 
-        setSuppliers(res.suppliers || []);
-        setPages(res.pages || 1);
-
-      } catch (err) {
-        console.error("Failed to load suppliers:", err);
+        setSuppliers(response.suppliers || []);
+        setPages(response.pages || 1);
+      } catch (error) {
+        console.error("Error fetching suppliers:", error);
       }
     };
 
@@ -48,34 +50,61 @@ const SupplierPage = () => {
   }, [page, limit, refreshTrigger]);
 
   // =========================
-  // CREATE / UPDATE
+  // HANDLERS (STANDARDIZED)
   // =========================
-  const handleSubmit = async (data) => {
-    try {
-      if (editing) {
-        await updateSupplier(editing._id, data);
-        setEditing(null);
-      } else {
-        await createSupplier(data);
-      }
+  const handleCreateClick = () => {
+    setEditingSupplier(null);
+    setShowForm(true);
+  };
 
+  const handleEditClick = (supplier) => {
+    setEditingSupplier(supplier);
+    setShowForm(true);
+  };
+
+  const handleCancel = () => {
+    setEditingSupplier(null);
+    setShowForm(false);
+  };
+
+  // =========================
+  // CREATE
+  // =========================
+  const handleCreate = async (data) => {
+    try {
+      await createSupplier(data);
       setRefreshTrigger((prev) => prev + 1);
-    } catch (err) {
-      console.error("Supplier save error:", err);
+      setShowForm(false);
+    } catch (error) {
+      console.error("CREATE ERROR:", error);
     }
   };
 
   // =========================
-  // DELETE
+  // UPDATE
   // =========================
-  const handleDelete = async (id) => {
+  const handleUpdate = async (id, data) => {
+    try {
+      await updateSupplier(id, data);
+      setEditingSupplier(null);
+      setShowForm(false);
+      setRefreshTrigger((prev) => prev + 1);
+    } catch (error) {
+      console.error("UPDATE ERROR:", error);
+    }
+  };
+
+  // =========================
+  // DELETE (DEACTIVATE)
+  // =========================
+  const handleDeactivate = async (id) => {
     try {
       if (!window.confirm("Deactivate this supplier?")) return;
 
       await deleteSupplier(id);
       setRefreshTrigger((prev) => prev + 1);
-    } catch (err) {
-      console.error("Delete supplier error:", err);
+    } catch (error) {
+      console.error("DELETE ERROR:", error);
     }
   };
 
@@ -86,8 +115,8 @@ const SupplierPage = () => {
     try {
       await restoreSupplier(id);
       setRefreshTrigger((prev) => prev + 1);
-    } catch (err) {
-      console.error("Restore supplier error:", err);
+    } catch (error) {
+      console.error("RESTORE ERROR:", error);
     }
   };
 
@@ -95,22 +124,41 @@ const SupplierPage = () => {
     <Layout>
       <h1>Suppliers</h1>
 
-      <SupplierForm
-        onSubmit={handleSubmit}
-        initialData={editing}
-        onCancel={() => setEditing(null)}
-      />
+      {/* =========================
+          CREATE BUTTON
+      ========================= */}
+      <button className="btn btn-primary" onClick={handleCreateClick}>
+        + Add Supplier
+      </button>
 
+      {/* =========================
+          FORM (CONTROLLED VISIBILITY)
+      ========================= */}
+      {showForm && (
+        <SupplierForm
+          initialData={editingSupplier}
+          onSubmit={
+            editingSupplier
+              ? (data) => handleUpdate(editingSupplier._id, data)
+              : handleCreate
+          }
+          onCancel={handleCancel}
+        />
+      )}
+
+      {/* =========================
+          TABLE
+      ========================= */}
       <SupplierTable
         suppliers={suppliers}
-        onEdit={setEditing}
-        onDelete={handleDelete}
+        onEdit={handleEditClick}
+        onDelete={handleDeactivate}
         onRestore={handleRestore}
       />
 
-      {/* ========================= */}
-      {/* PAGINATION (STANDARDIZED) */}
-      {/* ========================= */}
+      {/* =========================
+          PAGINATION
+      ========================= */}
       <Pagination
         page={page}
         pages={pages}

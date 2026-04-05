@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { getCustomers, getAgents } from "../utils/api";
 
-const VoyageForm = ({ onSubmit, initialData }) => {
-  const [form, setForm] = useState({
+const VoyageForm = ({ onSubmit, initialData, onCancel }) => {
+
+  const [formData, setFormData] = useState({
     vesselName: "",
     voyageNumber: "",
     loadPort: "",
@@ -15,8 +16,11 @@ const VoyageForm = ({ onSubmit, initialData }) => {
   const [customers, setCustomers] = useState([]);
   const [agents, setAgents] = useState([]);
 
+  // Detect Edit Mode
+  const isEdit = !!initialData;
+
   // =========================
-  // LOAD DROPDOWNS ONLY ONCE
+  // LOAD DROPDOWNS
   // =========================
   useEffect(() => {
     const fetchData = async () => {
@@ -35,11 +39,11 @@ const VoyageForm = ({ onSubmit, initialData }) => {
   }, []);
 
   // =========================
-  // LOAD FORM WHEN EDITING
+  // LOAD EDIT DATA
   // =========================
   useEffect(() => {
     if (initialData) {
-      setForm({
+      setFormData({
         vesselName: initialData.vesselName || "",
         voyageNumber: initialData.voyageNumber || "",
         loadPort: initialData.loadPort || "",
@@ -48,16 +52,6 @@ const VoyageForm = ({ onSubmit, initialData }) => {
         assignedCustomer: initialData.assignedCustomer?._id || "",
         assignedAgent: initialData.assignedAgent?._id || "",
       });
-    } else {
-      setForm({
-        vesselName: "",
-        voyageNumber: "",
-        loadPort: "",
-        dischargePort: "",
-        status: "Scheduled",
-        assignedCustomer: "",
-        assignedAgent: "",
-      });
     }
   }, [initialData]);
 
@@ -65,7 +59,10 @@ const VoyageForm = ({ onSubmit, initialData }) => {
   // HANDLE CHANGE
   // =========================
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
   };
 
   // =========================
@@ -73,10 +70,11 @@ const VoyageForm = ({ onSubmit, initialData }) => {
   // =========================
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit(form);
+    onSubmit(formData);
 
-    if (!initialData) {
-      setForm({
+    // reset ONLY on create mode (Agent-style simplicity)
+    if (!isEdit) {
+      setFormData({
         vesselName: "",
         voyageNumber: "",
         loadPort: "",
@@ -91,12 +89,10 @@ const VoyageForm = ({ onSubmit, initialData }) => {
   const isInactive = initialData?.isDeleted;
 
   return (
-    <form
-      onSubmit={handleSubmit}    
-      className="form-container"
-    >
-      {/* ✅ NEW: FORM TITLE (UI CONSISTENCY) */}
-      <h3>{initialData ? "Edit Voyage" : "Create Voyage"}</h3>
+    <form onSubmit={handleSubmit} className="form-container">
+
+      {/* TITLE */}
+      <h3>{isEdit ? "Edit Voyage" : "Create Voyage"}</h3>
 
       {isInactive && (
         <p style={{ color: "red" }}>
@@ -104,63 +100,58 @@ const VoyageForm = ({ onSubmit, initialData }) => {
         </p>
       )}
 
-      {/* ========================= */}
-      {/* INPUT FIELDS */}
-      {/* ========================= */}
-
-      
-      {/* ✅ NEW: WRAPPED WITH form-group */}
+      {/* Vessel Name */}
       <div className="form-group">
         <label>Vessel Name</label>
         <input
-          type="text"
           name="vesselName"
-          value={form.vesselName}
+          value={formData.vesselName}
           onChange={handleChange}
           required
           disabled={isInactive}
         />
       </div>
 
+      {/* Voyage Number */}
       <div className="form-group">
         <label>Voyage Number</label>
         <input
-          type="text"
           name="voyageNumber"
-          value={form.voyageNumber}
+          value={formData.voyageNumber}
           onChange={handleChange}
           required
           disabled={isInactive}
         />
       </div>
 
+      {/* Load Port */}
       <div className="form-group">
         <label>Load Port</label>
         <input
-          type="text"
           name="loadPort"
-          value={form.loadPort}
+          value={formData.loadPort}
           onChange={handleChange}
           disabled={isInactive}
         />
       </div>
 
+      {/* Discharge Port */}
       <div className="form-group">
         <label>Discharge Port</label>
         <input
-          type="text"
           name="dischargePort"
-          value={form.dischargePort}
+          value={formData.dischargePort}
           onChange={handleChange}
           disabled={isInactive}
         />
       </div>
 
+      {/* Status */}
       <div className="form-group">
         <label>Status</label>
         <select
           name="status"
-          value={form.status}
+          value={formData.status}
           onChange={handleChange}
           disabled={isInactive}
         >
@@ -172,11 +163,12 @@ const VoyageForm = ({ onSubmit, initialData }) => {
         </select>
       </div>
 
+      {/* Customer */}
       <div className="form-group">
         <label>Customer</label>
         <select
           name="assignedCustomer"
-          value={form.assignedCustomer}
+          value={formData.assignedCustomer}
           onChange={handleChange}
           required
           disabled={isInactive}
@@ -190,11 +182,12 @@ const VoyageForm = ({ onSubmit, initialData }) => {
         </select>
       </div>
 
+      {/* Agent */}
       <div className="form-group">
         <label>Agent</label>
         <select
           name="assignedAgent"
-          value={form.assignedAgent}
+          value={formData.assignedAgent}
           onChange={handleChange}
           required
           disabled={isInactive}
@@ -208,17 +201,27 @@ const VoyageForm = ({ onSubmit, initialData }) => {
         </select>
       </div>
 
-      
-      {/* ✅ NEW: STANDARD BUTTON SYSTEM */}
+      {/* BUTTONS (AGENT STYLE STANDARD) */}
       <div className="form-actions">
+
+        <button
+          type="button"
+          className="btn btn-secondary"
+          onClick={onCancel}
+        >
+          Cancel
+        </button>
+
         <button
           type="submit"
           className="btn btn-primary"
           disabled={isInactive}
         >
-          {initialData ? "Update" : "Create"}
+          {isEdit ? "Update Voyage" : "Save Voyage"}
         </button>
+
       </div>
+
     </form>
   );
 };

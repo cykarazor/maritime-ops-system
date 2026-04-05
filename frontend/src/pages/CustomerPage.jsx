@@ -16,6 +16,9 @@ const CustomerPage = () => {
   const [customers, setCustomers] = useState([]);
   const [editingCustomer, setEditingCustomer] = useState(null);
 
+  // ✅ STANDARDIZED FORM STATE
+  const [showForm, setShowForm] = useState(false);
+
   // =========================
   // PAGINATION STATE
   // =========================
@@ -24,12 +27,12 @@ const CustomerPage = () => {
   const [limit] = useState(5);
 
   // =========================
-  // REFRESH TRIGGER (STANDARDIZED)
+  // REFRESH TRIGGER
   // =========================
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // =========================
-  // FETCH CUSTOMERS (SERVER PAGINATION)
+  // FETCH CUSTOMERS
   // =========================
   useEffect(() => {
     const fetchCustomers = async () => {
@@ -38,7 +41,6 @@ const CustomerPage = () => {
 
         setCustomers(response.customers || []);
         setPages(response.pages || 1);
-
       } catch (error) {
         console.error("Error fetching customers:", error);
       }
@@ -48,12 +50,31 @@ const CustomerPage = () => {
   }, [page, limit, refreshTrigger]);
 
   // =========================
+  // HANDLERS (STANDARDIZED)
+  // =========================
+  const handleCreateClick = () => {
+    setEditingCustomer(null);
+    setShowForm(true);
+  };
+
+  const handleEditClick = (customer) => {
+    setEditingCustomer(customer);
+    setShowForm(true);
+  };
+
+  const handleCancel = () => {
+    setEditingCustomer(null);
+    setShowForm(false);
+  };
+
+  // =========================
   // CREATE
   // =========================
   const handleCreate = async (data) => {
     try {
       await createCustomer(data);
       setRefreshTrigger((prev) => prev + 1);
+      setShowForm(false);
     } catch (error) {
       console.error("CREATE ERROR:", error);
     }
@@ -66,6 +87,7 @@ const CustomerPage = () => {
     try {
       await updateCustomer(id, data);
       setEditingCustomer(null);
+      setShowForm(false);
       setRefreshTrigger((prev) => prev + 1);
     } catch (error) {
       console.error("UPDATE ERROR:", error);
@@ -73,7 +95,7 @@ const CustomerPage = () => {
   };
 
   // =========================
-  // DELETE (DEACTIVATE)
+  // DELETE
   // =========================
   const handleDeactivate = async (id) => {
     try {
@@ -102,25 +124,33 @@ const CustomerPage = () => {
     <Layout>
       <h1>Customers</h1>
 
-      <CustomerForm
-        onSubmit={
-          editingCustomer
-            ? (data) => handleUpdate(editingCustomer._id, data)
-            : handleCreate
-        }
-        initialData={editingCustomer}
-      />
+      {/* CREATE BUTTON */}
+      <button className="btn btn-primary" onClick={handleCreateClick}>
+        + Add Customer
+      </button>
 
+      {/* FORM (CONTROLLED VISIBILITY) */}
+      {showForm && (
+        <CustomerForm
+          onSubmit={
+            editingCustomer
+              ? (data) => handleUpdate(editingCustomer._id, data)
+              : handleCreate
+          }
+          initialData={editingCustomer}
+          onCancel={handleCancel}
+        />
+      )}
+
+      {/* TABLE */}
       <CustomerTable
         customers={customers}
-        onEdit={setEditingCustomer}
+        onEdit={handleEditClick}
         onDelete={handleDeactivate}
         onRestore={handleRestore}
       />
 
-      {/* ========================= */}
-      {/* PAGINATION (STANDARDIZED) */}
-      {/* ========================= */}
+      {/* PAGINATION */}
       <Pagination
         page={page}
         pages={pages}

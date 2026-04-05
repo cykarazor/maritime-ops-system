@@ -16,20 +16,23 @@ const VoyagesPage = () => {
   const [voyages, setVoyages] = useState([]);
   const [editingVoyage, setEditingVoyage] = useState(null);
 
+  // ✅ STANDARDIZED UI STATE
+  const [showForm, setShowForm] = useState(false);
+
   // =========================
-  // PAGINATION STATE (STANDARDIZED)
+  // PAGINATION
   // =========================
   const [page, setPage] = useState(1);
   const [pages, setPages] = useState(1);
   const [limit] = useState(5);
 
   // =========================
-  // REFRESH TRIGGER (STANDARD)
+  // REFRESH TRIGGER
   // =========================
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // =========================
-  // FETCH VOYAGES (SESSION 27 STANDARD)
+  // FETCH
   // =========================
   useEffect(() => {
     const fetchVoyages = async () => {
@@ -39,10 +42,7 @@ const VoyagesPage = () => {
         setVoyages(response.voyages || []);
         setPages(response.pages || 1);
       } catch (error) {
-        console.error(
-          "FETCH VOYAGES ERROR:",
-          error.response?.data || error.message
-        );
+        console.error("Error fetching voyages:", error);
       }
     };
 
@@ -50,10 +50,21 @@ const VoyagesPage = () => {
   }, [page, limit, refreshTrigger]);
 
   // =========================
-  // REFRESH TRIGGER FUNCTION
+  // HANDLERS (STANDARDIZED)
   // =========================
-  const triggerRefresh = () => {
-    setRefreshTrigger((prev) => prev + 1);
+  const handleCreateClick = () => {
+    setEditingVoyage(null);
+    setShowForm(true);
+  };
+
+  const handleEditClick = (voyage) => {
+    setEditingVoyage(voyage);
+    setShowForm(true);
+  };
+
+  const handleCancel = () => {
+    setEditingVoyage(null);
+    setShowForm(false);
   };
 
   // =========================
@@ -62,9 +73,10 @@ const VoyagesPage = () => {
   const handleCreate = async (data) => {
     try {
       await createVoyage(data);
-      triggerRefresh();
+      setRefreshTrigger((prev) => prev + 1);
+      setShowForm(false);
     } catch (error) {
-      console.error("CREATE ERROR:", error.response?.data || error.message);
+      console.error("CREATE ERROR:", error);
     }
   };
 
@@ -73,28 +85,26 @@ const VoyagesPage = () => {
   // =========================
   const handleUpdate = async (id, data) => {
     try {
-      if (!id) return;
-
       await updateVoyage(id, data);
-
       setEditingVoyage(null);
-      triggerRefresh();
+      setShowForm(false);
+      setRefreshTrigger((prev) => prev + 1);
     } catch (error) {
-      console.error("UPDATE ERROR:", error.response?.data || error.message);
+      console.error("UPDATE ERROR:", error);
     }
   };
 
   // =========================
   // DELETE
   // =========================
-  const handleDelete = async (id) => {
+  const handleDeactivate = async (id) => {
     try {
       if (!window.confirm("Deactivate this voyage?")) return;
 
       await deleteVoyage(id);
-      triggerRefresh();
+      setRefreshTrigger((prev) => prev + 1);
     } catch (error) {
-      console.error("DELETE ERROR:", error.response?.data || error.message);
+      console.error("DELETE ERROR:", error);
     }
   };
 
@@ -104,38 +114,43 @@ const VoyagesPage = () => {
   const handleRestore = async (id) => {
     try {
       await restoreVoyage(id);
-      triggerRefresh();
+      setRefreshTrigger((prev) => prev + 1);
     } catch (error) {
-      console.error("RESTORE ERROR:", error.response?.data || error.message);
+      console.error("RESTORE ERROR:", error);
     }
   };
 
-  // =========================
-  // RENDER
-  // =========================
   return (
     <Layout>
       <h1>Voyages</h1>
 
-      <VoyageForm
-        onSubmit={
-          editingVoyage
-            ? (data) => handleUpdate(editingVoyage?._id, data)
-            : handleCreate
-        }
-        initialData={editingVoyage}
-      />
+      {/* CREATE BUTTON */}
+      <button className="btn btn-primary" onClick={handleCreateClick}>
+        + Add Voyage
+      </button>
 
+      {/* FORM */}
+      {showForm && (
+        <VoyageForm
+          onSubmit={
+            editingVoyage
+              ? (data) => handleUpdate(editingVoyage._id, data)
+              : handleCreate
+          }
+          initialData={editingVoyage}
+          onCancel={handleCancel}
+        />
+      )}
+
+      {/* TABLE */}
       <VoyageTable
         voyages={voyages}
-        onEdit={(v) => setEditingVoyage(v)}
-        onDelete={handleDelete}
+        onEdit={handleEditClick}
+        onDelete={handleDeactivate}
         onRestore={handleRestore}
       />
 
-      {/* ========================= */}
-      {/* PAGINATION (STANDARDIZED - SAME AS INVOICE) */}
-      {/* ========================= */}
+      {/* PAGINATION */}
       <Pagination
         page={page}
         pages={pages}

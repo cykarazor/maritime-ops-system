@@ -16,29 +16,28 @@ const InvoicePage = () => {
   const [invoices, setInvoices] = useState([]);
   const [editing, setEditing] = useState(null);
 
-  const [formKey, setFormKey] = useState(0);
+  // ✅ STANDARD UI STATE
+  const [showForm, setShowForm] = useState(false);
 
   // =========================
-  // ✅ PAGINATION STATE
+  // PAGINATION
   // =========================
   const [page, setPage] = useState(1);
   const [pages, setPages] = useState(1);
   const [limit] = useState(5);
 
   // =========================
-  // ✅ ADDED: refresh trigger (for CRUD re-fetch)
+  // REFRESH TRIGGER
   // =========================
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // =========================
-  // ✅ FIXED: fetch INSIDE useEffect (NO ESLINT ISSUE)
+  // FETCH INVOICES
   // =========================
   useEffect(() => {
     const fetchInvoices = async () => {
       try {
         const response = await getInvoices({ page, limit });
-
-        console.log("Invoices response:", response);
 
         setInvoices(response.invoices || []);
         setPages(response.pages || 1);
@@ -48,34 +47,17 @@ const InvoicePage = () => {
     };
 
     fetchInvoices();
-  }, [page, limit, refreshTrigger]); // ✅ SAFE dependencies
+  }, [page, limit, refreshTrigger]);
 
   // =========================
-  // CREATE / UPDATE
+  // HANDLERS (STANDARDIZED)
   // =========================
-  const handleSubmit = (invoice) => {
-    if (editing) {
-      updateInvoice(editing._id, invoice).then(() => {
-        setEditing(null);
-        setFormKey((prev) => prev + 1);
-
-        // ✅ trigger refresh instead of calling fetch directly
-        setRefreshTrigger((prev) => prev + 1);
-      });
-    } else {
-      createInvoice(invoice).then(() => {
-        setFormKey((prev) => prev + 1);
-
-        // ✅ trigger refresh
-        setRefreshTrigger((prev) => prev + 1);
-      });
-    }
+  const handleCreateClick = () => {
+    setEditing(null);
+    setShowForm(true);
   };
 
-  // =========================
-  // EDIT
-  // =========================
-  const handleEdit = (invoice) => {
+  const handleEditClick = (invoice) => {
     setEditing({
       ...invoice,
       voyage: invoice.voyage?._id || "",
@@ -83,7 +65,39 @@ const InvoicePage = () => {
       supplier: invoice.supplier?._id || "",
     });
 
-    setFormKey((prev) => prev + 1);
+    setShowForm(true);
+  };
+
+  const handleCancel = () => {
+    setEditing(null);
+    setShowForm(false);
+  };
+
+  // =========================
+  // CREATE
+  // =========================
+  const handleCreate = async (invoice) => {
+    try {
+      await createInvoice(invoice);
+      setShowForm(false);
+      setRefreshTrigger((prev) => prev + 1);
+    } catch (err) {
+      console.error("Create failed:", err);
+    }
+  };
+
+  // =========================
+  // UPDATE
+  // =========================
+  const handleUpdate = async (id, invoice) => {
+    try {
+      await updateInvoice(id, invoice);
+      setEditing(null);
+      setShowForm(false);
+      setRefreshTrigger((prev) => prev + 1);
+    } catch (err) {
+      console.error("Update failed:", err);
+    }
   };
 
   // =========================
@@ -92,18 +106,9 @@ const InvoicePage = () => {
   const handleDelete = async (id) => {
     try {
       await deleteInvoice(id);
-
-      setInvoices((prev) =>
-        prev.map((inv) =>
-          inv._id === id ? { ...inv, isActive: false } : inv
-        )
-      );
-
-      // ✅ trigger refresh
       setRefreshTrigger((prev) => prev + 1);
     } catch (err) {
       console.error("Delete failed:", err);
-      alert("Failed to deactivate invoice");
     }
   };
 
@@ -113,43 +118,43 @@ const InvoicePage = () => {
   const handleRestore = async (id) => {
     try {
       await restoreInvoice(id);
-
-      // ✅ trigger refresh
       setRefreshTrigger((prev) => prev + 1);
     } catch (err) {
       console.error("Restore failed:", err);
     }
   };
 
-  // =========================
-  // CANCEL EDIT
-  // =========================
-  const handleCancel = () => {
-    setEditing(null);
-    setFormKey((prev) => prev + 1);
-  };
-
   return (
     <Layout>
       <h1>Invoices</h1>
 
-      <InvoiceForm
-        key={formKey}
-        initialData={editing}
-        onSubmit={handleSubmit}
-        onCancel={handleCancel}
-      />
+      {/* CREATE BUTTON */}
+      <button className="btn btn-primary" onClick={handleCreateClick}>
+        + Add Invoice
+      </button>
 
+      {/* FORM */}
+      {showForm && (
+        <InvoiceForm
+          initialData={editing}
+          onSubmit={
+            editing
+              ? (data) => handleUpdate(editing._id, data)
+              : handleCreate
+          }
+          onCancel={handleCancel}
+        />
+      )}
+
+      {/* TABLE */}
       <InvoiceTable
         invoices={invoices}
-        onEdit={handleEdit}
+        onEdit={handleEditClick}
         onDelete={handleDelete}
         onRestore={handleRestore}
       />
 
-      {/* ========================= */}
-      {/* ✅ PAGINATION */}
-      {/* ========================= */}
+      {/* PAGINATION */}
       <Pagination
         page={page}
         pages={pages}

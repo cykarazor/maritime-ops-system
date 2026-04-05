@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 
-const SupplierForm = ({ initialData = {}, onSubmit, onCancel }) => {
-  const [supplier, setSupplier] = useState({
+const SupplierForm = ({ initialData, onSubmit, onCancel }) => {
+  const [formData, setFormData] = useState({
     companyName: "",
     country: "",
     contactPerson: "",
@@ -17,9 +17,17 @@ const SupplierForm = ({ initialData = {}, onSubmit, onCancel }) => {
     notes: "",
   });
 
+  // =========================
+  // STANDARD EDIT FLAG
+  // =========================
+  const isEdit = !!initialData;
+
+  // =========================
+  // HYDRATE FORM IN EDIT MODE
+  // =========================
   useEffect(() => {
-    if (initialData && Object.keys(initialData).length > 0) {
-      setSupplier({
+    if (initialData) {
+      setFormData({
         companyName: initialData.companyName || "",
         country: initialData.country || "",
         contactPerson: initialData.contactPerson || "",
@@ -34,8 +42,31 @@ const SupplierForm = ({ initialData = {}, onSubmit, onCancel }) => {
 
         notes: initialData.notes || "",
       });
-    } else {
-      setSupplier({
+    }
+  }, [initialData]);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    onSubmit({
+      ...formData,
+      paymentTerms: Number(formData.paymentTerms),
+      creditLimit: Number(formData.creditLimit),
+      openingBalance: Number(formData.openingBalance),
+    });
+
+    // STANDARD RULE: reset only in create mode
+    if (!isEdit) {
+      setFormData({
         companyName: "",
         country: "",
         contactPerson: "",
@@ -49,177 +80,173 @@ const SupplierForm = ({ initialData = {}, onSubmit, onCancel }) => {
         notes: "",
       });
     }
-  }, [initialData]);
-
-  const handleChange = (e) => {
-    setSupplier({ ...supplier, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-
-    onSubmit({
-      ...supplier,
-      paymentTerms: Number(supplier.paymentTerms),
-      creditLimit: Number(supplier.creditLimit),
-      openingBalance: Number(supplier.openingBalance),
-    });
   };
 
   const isInactive = initialData?.isActive === false;
 
   return (
     <form className="form-container" onSubmit={handleSubmit}>
-      <h3>{initialData?._id ? "Edit Supplier" : "Add Supplier"}</h3>
 
+      {/* STANDARD TITLE */}
+      <h3>{isEdit ? "Edit Supplier" : "Create Supplier"}</h3>
+
+      {/* Inactive warning (kept as-is business rule) */}
       {isInactive && (
         <p style={{ color: "red" }}>
           This supplier is inactive. Restore it before editing.
         </p>
       )}
 
-      {/*COMPANY NAME*/}
+      {/* Company Name */}
       <div className="form-group">
         <label>Company Name</label>
-          <input
-          name="companyName" 
-          placeholder="Company Name" 
-          value={supplier.companyName} 
-          onChange={handleChange} 
-          required 
-          disabled={isInactive} 
-          />
-      </div>
-
-      <div className="form-group">
-        <label>Country</label>
-          <input 
-            name="country" 
-            placeholder="Country" 
-            value={supplier.country} 
-            onChange={handleChange} 
-            disabled={isInactive} 
-          />
-      </div>
-
-      <div className="form-group">
-        <label>Contact Person</label>
-          <input 
-            name="contactPerson" 
-            placeholder="Contact Person" 
-            value={supplier.contactPerson} 
-            onChange={handleChange} 
-            disabled={isInactive} 
-          />
-      </div>
-
-      <div className="form-group">
-        <label>Email</label>
-          <input 
-            name="email" 
-            placeholder="Email" 
-            value={supplier.email} 
-            onChange={handleChange} 
-            disabled={isInactive} 
-          />
-      </div>
-
-      <div className="form-group">
-        <label>Phone</label>
-          <input 
-            name="phone" 
-            placeholder="Phone" 
-            value={supplier.phone} 
-            onChange={handleChange} 
-            disabled={isInactive} 
-          />
-      </div>
-
-      <div className="form-group">
-        <label>Address</label>
-          <textarea 
-            name="address" 
-            placeholder="Address" 
-            value={supplier.address} 
-            onChange={handleChange} 
-            disabled={isInactive} 
-          />
-      </div>
-
-      <div className="form-group">
-        <label>Currency</label>
-          <select 
-            name="currency" 
-            value={supplier.currency} 
-            onChange={handleChange} 
-            disabled={isInactive}
-          >
-            <option value="USD">USD</option>
-            <option value="TTD">TTD</option>
-            <option value="EUR">EUR</option>
-          </select>
-      </div>
-
-      <div className="form-group">
-        <label>Payment Terms (days)</label>
-        <input 
-          name="paymentTerms" 
-          type="number" 
-          value={supplier.paymentTerms} 
-          onChange={handleChange} 
-          disabled={isInactive} 
+        <input
+          name="companyName"
+          value={formData.companyName}
+          onChange={handleChange}
+          required
+          disabled={isInactive}
         />
       </div>
 
+      {/* Country */}
       <div className="form-group">
-        <label>Credit Limit</label>
-          <input 
-            name="creditLimit" 
-            type="number" 
-            value={supplier.creditLimit} 
-            onChange={handleChange} 
-            disabled={isInactive} 
-          />
+        <label>Country</label>
+        <input
+          name="country"
+          value={formData.country}
+          onChange={handleChange}
+          disabled={isInactive}
+        />
       </div>
 
+      {/* Contact Person */}
       <div className="form-group">
-        <label>Opening Balance</label>
-          <input 
-            name="openingBalance" 
-            type="number" 
-            value={supplier.openingBalance} 
-            onChange={handleChange} 
-            disabled={isInactive} 
-          />
+        <label>Contact Person</label>
+        <input
+          name="contactPerson"
+          value={formData.contactPerson}
+          onChange={handleChange}
+          disabled={isInactive}
+        />
       </div>
 
+      {/* Email */}
       <div className="form-group">
-        <label>Notes</label>
-          <textarea 
-            name="notes"
-            placeholder="Notes" 
-            value={supplier.notes} 
-            onChange={handleChange} 
-            disabled={isInactive} 
-          />
+        <label>Email</label>
+        <input
+          name="email"
+          value={formData.email}
+          onChange={handleChange}
+          disabled={isInactive}
+        />
       </div>
 
-      <div className="form-actions">
-        <button 
-          className="btn btn-primary"
-          type="submit" 
+      {/* Phone */}
+      <div className="form-group">
+        <label>Phone</label>
+        <input
+          name="phone"
+          value={formData.phone}
+          onChange={handleChange}
+          disabled={isInactive}
+        />
+      </div>
+
+      {/* Address */}
+      <div className="form-group">
+        <label>Address</label>
+        <textarea
+          name="address"
+          value={formData.address}
+          onChange={handleChange}
+          disabled={isInactive}
+        />
+      </div>
+
+      {/* Currency */}
+      <div className="form-group">
+        <label>Currency</label>
+        <select
+          name="currency"
+          value={formData.currency}
+          onChange={handleChange}
           disabled={isInactive}
         >
-          {initialData?._id ? "Update" : "Create"}
-        </button>
+          <option value="USD">USD</option>
+          <option value="TTD">TTD</option>
+          <option value="EUR">EUR</option>
+        </select>
+      </div>
 
-        <button 
+      {/* Payment Terms */}
+      <div className="form-group">
+        <label>Payment Terms (days)</label>
+        <input
+          name="paymentTerms"
+          type="number"
+          value={formData.paymentTerms}
+          onChange={handleChange}
+          disabled={isInactive}
+        />
+      </div>
+
+      {/* Credit Limit */}
+      <div className="form-group">
+        <label>Credit Limit</label>
+        <input
+          name="creditLimit"
+          type="number"
+          value={formData.creditLimit}
+          onChange={handleChange}
+          disabled={isInactive}
+        />
+      </div>
+
+      {/* Opening Balance */}
+      <div className="form-group">
+        <label>Opening Balance</label>
+        <input
+          name="openingBalance"
+          type="number"
+          value={formData.openingBalance}
+          onChange={handleChange}
+          disabled={isInactive}
+        />
+      </div>
+
+      {/* Notes */}
+      <div className="form-group">
+        <label>Notes</label>
+        <textarea
+          name="notes"
+          value={formData.notes}
+          onChange={handleChange}
+          disabled={isInactive}
+        />
+      </div>
+
+      {/* STANDARD BUTTON BLOCK */}
+      <div className="form-actions">
+
+        {/* Cancel FIRST (SYSTEM STANDARD) */}
+        <button
+          type="button"
           className="btn btn-secondary"
-          type="button" 
           onClick={onCancel}
         >
           Cancel
         </button>
+
+        {/* Submit SECOND */}
+        <button
+          className="btn btn-primary"
+          type="submit"
+          disabled={isInactive}
+        >
+          {isEdit ? "Update Supplier" : "Save Supplier"}
+        </button>
+
       </div>
     </form>
   );

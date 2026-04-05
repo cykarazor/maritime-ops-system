@@ -19,23 +19,26 @@ const CargoPage = () => {
   const [cargo, setCargo] = useState([]);
   const [editing, setEditing] = useState(null);
 
+  // ✅ STANDARDIZED UI STATE
+  const [showForm, setShowForm] = useState(false);
+
   const [customers, setCustomers] = useState([]);
   const [voyages, setVoyages] = useState([]);
 
   // =========================
-  // PAGINATION STATE
+  // PAGINATION
   // =========================
   const [page, setPage] = useState(1);
   const [pages, setPages] = useState(1);
   const [limit] = useState(5);
 
   // =========================
-  // REFRESH TRIGGER
+  // REFRESH
   // =========================
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // =========================
-  // FETCH DATA (STANDARDIZED)
+  // FETCH DATA
   // =========================
   useEffect(() => {
     const fetchData = async () => {
@@ -61,12 +64,31 @@ const CargoPage = () => {
   }, [page, limit, refreshTrigger]);
 
   // =========================
+  // HANDLERS (STANDARDIZED)
+  // =========================
+  const handleCreateClick = () => {
+    setEditing(null);
+    setShowForm(true);
+  };
+
+  const handleEditClick = (item) => {
+    setEditing(item);
+    setShowForm(true);
+  };
+
+  const handleCancel = () => {
+    setEditing(null);
+    setShowForm(false);
+  };
+
+  // =========================
   // CREATE
   // =========================
   const handleCreate = async (data) => {
     try {
       await createCargo(data);
       setRefreshTrigger((prev) => prev + 1);
+      setShowForm(false);
     } catch (err) {
       console.error("Create cargo failed:", err);
     }
@@ -79,6 +101,7 @@ const CargoPage = () => {
     try {
       await updateCargo(id, data);
       setEditing(null);
+      setShowForm(false);
       setRefreshTrigger((prev) => prev + 1);
     } catch (err) {
       console.error("Update cargo failed:", err);
@@ -114,27 +137,35 @@ const CargoPage = () => {
     <Layout>
       <h1>Cargo (Revenue)</h1>
 
-      <CargoForm
-        onSubmit={
-          editing
-            ? (data) => handleUpdate(editing._id, data)
-            : handleCreate
-        }
-        initialData={editing}
-        customers={customers}
-        voyages={voyages}
-      />
+      {/* CREATE BUTTON */}
+      <button className="btn btn-primary" onClick={handleCreateClick}>
+        + Add Cargo
+      </button>
 
+      {/* FORM (CONTROLLED) */}
+      {showForm && (
+        <CargoForm
+          onSubmit={
+            editing
+              ? (data) => handleUpdate(editing._id, data)
+              : handleCreate
+          }
+          initialData={editing}
+          onCancel={handleCancel}
+          customers={customers}
+          voyages={voyages}
+        />
+      )}
+
+      {/* TABLE */}
       <CargoTable
         cargo={cargo}
-        onEdit={setEditing}
+        onEdit={handleEditClick}
         onDelete={handleDelete}
         onRestore={handleRestore}
       />
 
-      {/* ========================= */}
-      {/* PAGINATION (STANDARDIZED) */}
-      {/* ========================= */}
+      {/* PAGINATION */}
       <Pagination
         page={page}
         pages={pages}

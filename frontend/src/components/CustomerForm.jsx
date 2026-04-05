@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 
-const CustomerForm = ({ onSubmit, initialData }) => {
+const CustomerForm = ({ onSubmit, initialData, onCancel }) => {
   const [formData, setFormData] = useState({
     name: "",
     companyName: "",
@@ -10,6 +10,9 @@ const CustomerForm = ({ onSubmit, initialData }) => {
     phone: "",
     notes: ""
   });
+
+  // STANDARD: detect edit mode
+  const isEdit = !!initialData;
 
   useEffect(() => {
     if (initialData) {
@@ -34,29 +37,30 @@ const CustomerForm = ({ onSubmit, initialData }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+
     onSubmit(formData);
 
-    setFormData({
-      name: "",
-      companyName: "",
-      country: "",
-      contactPerson: "",
-      email: "",
-      phone: "",
-      notes: ""
-    });
+    // STANDARD FIX: only reset in CREATE mode
+    if (!isEdit) {
+      setFormData({
+        name: "",
+        companyName: "",
+        country: "",
+        contactPerson: "",
+        email: "",
+        phone: "",
+        notes: ""
+      });
+    }
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      // ✅ NEW: standardized form container
-      className="form-container"
-    >
-      {/* ✅ NEW: FORM TITLE */}
-      <h3>{initialData ? "Edit Customer" : "Create Customer"}</h3>
+    <form onSubmit={handleSubmit} className="form-container">
 
-      {/* ✅ NEW: FORM GROUP STRUCTURE */}
+      {/* STANDARD TITLE */}
+      <h3>{isEdit ? "Edit Customer" : "Create Customer"}</h3>
+
+      {/* Company Name */}
       <div className="form-group">
         <label>Company Name</label>
         <input
@@ -66,6 +70,7 @@ const CustomerForm = ({ onSubmit, initialData }) => {
         />
       </div>
 
+      {/* Customer Name */}
       <div className="form-group">
         <label>Customer Name</label>
         <input
@@ -76,6 +81,7 @@ const CustomerForm = ({ onSubmit, initialData }) => {
         />
       </div>
 
+      {/* Country */}
       <div className="form-group">
         <label>Country</label>
         <input
@@ -86,6 +92,7 @@ const CustomerForm = ({ onSubmit, initialData }) => {
         />
       </div>
 
+      {/* Contact Person */}
       <div className="form-group">
         <label>Contact Person</label>
         <input
@@ -95,6 +102,7 @@ const CustomerForm = ({ onSubmit, initialData }) => {
         />
       </div>
 
+      {/* Email */}
       <div className="form-group">
         <label>Email</label>
         <input
@@ -104,6 +112,7 @@ const CustomerForm = ({ onSubmit, initialData }) => {
         />
       </div>
 
+      {/* Phone */}
       <div className="form-group">
         <label>Phone</label>
         <input
@@ -113,6 +122,7 @@ const CustomerForm = ({ onSubmit, initialData }) => {
         />
       </div>
 
+      {/* Notes */}
       <div className="form-group">
         <label>Notes</label>
         <textarea
@@ -122,11 +132,23 @@ const CustomerForm = ({ onSubmit, initialData }) => {
         />
       </div>
 
-      {/* ✅ NEW: STANDARD BUTTON SYSTEM */}
+      {/* STANDARD BUTTON BLOCK */}
       <div className="form-actions">
-        <button type="submit" className="btn btn-primary">
-          {initialData ? "Update Customer" : "Create Customer"}
+
+        {/* Cancel FIRST */}
+        <button
+          type="button"
+          className="btn btn-secondary"
+          onClick={onCancel}
+        >
+          Cancel
         </button>
+
+        {/* Submit SECOND */}
+        <button type="submit" className="btn btn-primary">
+          {isEdit ? "Update Customer" : "Save Customer"}
+        </button>
+
       </div>
     </form>
   );
