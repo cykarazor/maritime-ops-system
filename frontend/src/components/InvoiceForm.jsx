@@ -196,7 +196,7 @@ const InvoiceForm = ({ initialData, onSubmit, onCancel }) => {
             <option value="">Select Customer</option>
             {customers.map((c) => (
               <option key={c._id} value={c._id}>
-                {c.name}
+                {c.companyName}
               </option>
             ))}
           </select>
@@ -215,7 +215,7 @@ const InvoiceForm = ({ initialData, onSubmit, onCancel }) => {
             <option value="">Select Supplier</option>
             {suppliers.map((s) => (
               <option key={s._id} value={s._id}>
-                {s.name}
+                {s.companyName}
               </option>
             ))}
           </select>

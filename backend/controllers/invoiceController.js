@@ -37,8 +37,8 @@ const getInvoices = async (req, res) => {
     const parsedPage = parseInt(page);
 
     let invoices = await Invoice.find(query)
-      .populate("customer", "name")
-      .populate("supplier", "name")
+      .populate("customer", "companyName")
+      .populate("supplier", "companyName")
       .populate("agent", "companyName")
       .populate("voyage", "vesselName voyageNumber")
       .populate("cargo", "description");

@@ -12,7 +12,7 @@ const SupplierTable = ({ suppliers, onEdit, onDelete, onRestore }) => {
           <tr>
             <th>Company</th>
             <th>Country</th>
-            <th>Contact</th>
+            <th>Contact Person</th>
             <th>Email</th>
             <th>Phone</th>
             <th>Currency</th>

@@ -15,7 +15,7 @@ const VoyageTable = ({ voyages, onEdit, onDelete, onRestore }) => {
         <thead>
           <tr>
             <th>Vessel</th>
-            <th>Voyage #</th>
+            <th>Voyage Number</th>
             <th>Load Port</th>
             <th>Discharge Port</th>
             <th>Voyage Status</th>

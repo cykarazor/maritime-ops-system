@@ -19,7 +19,7 @@ const InvoiceTable = ({ invoices = [], onEdit, onDelete, onRestore }) => {
       <table className="data-table">
         <thead>
           <tr>
-            <th>Invoice #</th>
+            <th>Invoice Number</th>
             <th>Type</th>
             <th>Voyage</th>
             <th>Customer</th>
@@ -47,8 +47,8 @@ const InvoiceTable = ({ invoices = [], onEdit, onDelete, onRestore }) => {
                 <td>{inv.invoiceNumber}</td>
                 <td>{inv.type}</td>
                 <td>{getVoyageLabel(inv)}</td>
-                <td>{inv.customer?.name || "-"}</td>
-                <td>{inv.supplier?.name || "-"}</td>
+                <td>{inv.customer?.name || inv.customer?.companyName || "-"}</td>
+                <td>{inv.supplier?.name || inv.supplier?.companyName || "-"}</td>
                 <td>{inv.amount ?? 0}</td>
                 <td>{inv.amountPaid ?? 0}</td>
                 <td>{getBalance(inv)}</td>
