@@ -1,113 +1,90 @@
 import React from "react";
+import Table from "./Table";
 
-const InvoiceTable = ({ invoices = [], onEdit, onDelete, onRestore }) => {
+const InvoiceTable = ({ invoices, onEdit, onDelete, onRestore }) => {
   const safeInvoices = Array.isArray(invoices) ? invoices : [];
 
-  const getVoyageLabel = (inv) => {
-    if (!inv.voyage) return "-";
-    return `${inv.voyage.vesselName || ""} ${inv.voyage.voyageNumber || ""}`;
-  };
+  const columns = [
+    { header: "Invoice #", accessor: "invoiceNumber" },
+    { header: "Type", accessor: "type" },
 
-  const getBalance = (inv) => {
-    const amount = Number(inv.amount) || 0;
-    const paid = Number(inv.amountPaid) || 0;
-    return amount - paid;
-  };
+    {
+      header: "Voyage",
+      render: (inv) =>
+        inv.voyage
+          ? `${inv.voyage.vesselName || ""} ${inv.voyage.voyageNumber || ""}`
+          : "-",
+    },
+
+    {
+      header: "Customer",
+      render: (inv) =>
+        inv.customer?.name || inv.customer?.companyName || "-",
+    },
+
+    {
+      header: "Supplier",
+      render: (inv) =>
+        inv.supplier?.name || inv.supplier?.companyName || "-",
+    },
+
+    { header: "Amount", accessor: "amount" },
+    { header: "Paid", accessor: "amountPaid" },
+
+    {
+      header: "Balance",
+      render: (inv) => {
+        const amount = Number(inv.amount) || 0;
+        const paid = Number(inv.amountPaid) || 0;
+        return amount - paid;
+      },
+    },
+
+    { header: "Payment Status", accessor: "paymentStatus" },
+
+    {
+      header: "Record Status",
+      render: (inv) =>
+        inv.isActive ? (
+          <span style={{ color: "green" }}>Active</span>
+        ) : (
+          <span style={{ color: "red" }}>Inactive</span>
+        ),
+    },
+
+    {
+      header: "Invoice Date",
+      render: (inv) =>
+        inv.invoiceDate
+          ? new Date(inv.invoiceDate).toLocaleDateString()
+          : "-",
+    },
+
+    {
+      header: "Due Date",
+      render: (inv) =>
+        inv.dueDate ? new Date(inv.dueDate).toLocaleDateString() : "-",
+    },
+
+    { header: "Notes", accessor: "notes" },
+  ];
 
   return (
-    <div className="table-container">
-      <table className="data-table">
-        <thead>
-          <tr>
-            <th>Invoice Number</th>
-            <th>Type</th>
-            <th>Voyage</th>
-            <th>Customer</th>
-            <th>Supplier</th>
-            <th>Amount</th>
-            <th>Paid</th>
-            <th>Balance</th>
-            <th>Payment Status</th>
-            <th>Record Status</th>
-            <th>Invoice Date</th>
-            <th>Due Date</th>
-            <th>Notes</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
+    <Table
+      columns={columns}
+      data={safeInvoices}
+      actions={{
+        onEdit,
+        onDelete,
+        onRestore,
 
-        <tbody>
-          {safeInvoices.length === 0 ? (
-            <tr>
-              <td colSpan="14">No invoices found</td>
-            </tr>
-          ) : (
-            safeInvoices.map((inv) => (
-              <tr key={inv._id}>
-                <td>{inv.invoiceNumber}</td>
-                <td>{inv.type}</td>
-                <td>{getVoyageLabel(inv)}</td>
-                <td>{inv.customer?.name || inv.customer?.companyName || "-"}</td>
-                <td>{inv.supplier?.name || inv.supplier?.companyName || "-"}</td>
-                <td>{inv.amount ?? 0}</td>
-                <td>{inv.amountPaid ?? 0}</td>
-                <td>{getBalance(inv)}</td>
-                <td>{inv.paymentStatus}</td>
-
-                <td>
-                  {inv.isActive ? (
-                    <span style={{ color: "green" }}>Active</span>
-                  ) : (
-                    <span style={{ color: "red" }}>Inactive</span>
-                  )}
-                </td>
-
-                <td>
-                  {inv.invoiceDate
-                    ? new Date(inv.invoiceDate).toLocaleDateString()
-                    : "-"}
-                </td>
-
-                <td>
-                  {inv.dueDate
-                    ? new Date(inv.dueDate).toLocaleDateString()
-                    : "-"}
-                </td>
-
-                <td>{inv.notes || "-"}</td>
-
-                <td className="actions">
-                  {inv.isActive ? (
-                    <>
-                      <button
-                        className="btn btn-edit"
-                        onClick={() => onEdit(inv)}
-                      >
-                        Edit
-                      </button>
-
-                      <button
-                        className="btn btn-danger"
-                        onClick={() => onDelete(inv._id)}
-                      >
-                        Deactivate
-                      </button>
-                    </>
-                  ) : (
-                    <button
-                      className="btn btn-success"
-                      onClick={() => onRestore(inv._id)}
-                    >
-                      Restore
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ))
-          )}
-        </tbody>
-      </table>
-    </div>
+        // 🔥 SESSION 36 RULE SYSTEM
+        showEdit: (inv) => inv.isActive === true,
+        showDelete: (inv) => inv.isActive === true,
+        showRestore: (inv) => inv.isActive === false,
+      }}
+      emptyMessage="No invoices found"
+    />
   );
 };
 

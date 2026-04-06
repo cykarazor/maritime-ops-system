@@ -22,7 +22,7 @@ const Pagination = ({ page, pages, onPageChange }) => {
   };
 
   return (
-    <div style={{ marginTop: "20px", display: "flex", gap: "8px" }}>
+    <div className="pagination">
       {/* Prev */}
       <button disabled={page === 1} onClick={() => onPageChange(page - 1)}>
         Prev
@@ -32,7 +32,7 @@ const Pagination = ({ page, pages, onPageChange }) => {
       {page > 3 && (
         <>
           <button onClick={() => onPageChange(1)}>1</button>
-          <span>...</span>
+          <span className="dots">...</span>
         </>
       )}
 
@@ -41,11 +41,7 @@ const Pagination = ({ page, pages, onPageChange }) => {
         <button
           key={p}
           onClick={() => onPageChange(p)}
-          disabled={p === page}
-          style={{
-            fontWeight: p === page ? "bold" : "normal",
-            background: p === page ? "#ddd" : "white",
-          }}
+          className={p === page ? "active" : ""}
         >
           {p}
         </button>
@@ -54,7 +50,7 @@ const Pagination = ({ page, pages, onPageChange }) => {
       {/* Last + dots */}
       {page < pages - 2 && (
         <>
-          <span>...</span>
+          <span className="dots">...</span>
           <button onClick={() => onPageChange(pages)}>{pages}</button>
         </>
       )}

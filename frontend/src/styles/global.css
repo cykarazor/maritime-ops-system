@@ -23,6 +23,18 @@
   background-color: #f5f5f5;
 }
 
+.data-table tbody tr {
+  transition: background-color 0.15s ease;
+}
+
+.data-table tbody tr:nth-child(even) {
+  background-color: #f6f8fb;
+}
+
+.data-table tbody tr:hover {
+  background-color: #dfeeff;
+}
+
 /* ========================= */
 /* ACTION BUTTONS */
 /* ========================= */
@@ -121,4 +133,57 @@ textarea:focus {
   display: flex;
   gap: 10px;
   margin-top: 10px;
+}
+
+/* ========================= */
+/* PAGINATION */
+/* ========================= */
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+
+/* Base button */
+.pagination button {
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #1f2937;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+/* Hover */
+.pagination button:hover:not(:disabled) {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+}
+
+/* Active page */
+.pagination button.active {
+  background: #0f172a;
+  color: #ffffff;
+  border-color: #0f172a;
+}
+
+/* Disabled */
+.pagination button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Optional: smoother spacing on small screens */
+@media (max-width: 600px) {
+  .pagination {
+    justify-content: center;
+  }
 }

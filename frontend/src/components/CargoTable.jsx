@@ -1,113 +1,63 @@
 import React from "react";
+import Table from "./Table";
 
 const CargoTable = ({ cargo, onEdit, onDelete, onRestore }) => {
-  const safeCargo = Array.isArray(cargo) ? cargo : [];
+  const columns = [
+  {
+    header: "Voyage",
+    render: (c) =>
+      c.voyage
+        ? `${c.voyage.vesselName || c.voyage.vessel?.name || "Unknown"} - ${
+            c.voyage.voyageNumber || ""
+          }`
+        : "-",
+  },
+  {
+    header: "Customer",
+    render: (c) => c.customer?.companyName || c.customer?.name || "-",
+  },
+  { header: "Type", accessor: "cargoType" },
+  { header: "Qty", accessor: "quantity" },
+  { header: "Unit", accessor: "unit" },
+  {
+    header: "Rate",
+    render: (c) => `$${Number(c.rate ?? 0).toFixed(2)}`,
+  },
+  {
+    header: "Total Revenue",
+    render: (c) => `$${Number(c.totalRevenue ?? 0).toFixed(2)}`,
+  },
+  {
+    header: "Notes",
+    accessor: "notes",
+  },
+  {
+    header: "Status",
+    render: (c) =>
+      c.isActive ? (
+        <span style={{ color: "green" }}>Active</span>
+      ) : (
+        <span style={{ color: "red" }}>Inactive</span>
+      ),
+  },
+];
 
   return (
-    <div
-      className="table-container"
-    >
-      <table
-        className="data-table"
-      >
-        {/* ================= HEADER STYLING ADDED ================= */}
-        <thead style={{ backgroundColor: "#f5f5f5" }}>
-          <tr>
-            <th>Voyage</th>
-            <th>Customer</th>
-            <th>Type</th>
-            <th>Qty</th>
-            <th>Unit</th>
-            <th>Rate</th>
-            <th>Total Revenue</th>
-            <th>Status</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
+    <Table
+      columns={columns}
+      data={cargo}
+      actions={{
+        onEdit,
+        onDelete,
+        onRestore,
 
-        <tbody>
-          {safeCargo.length === 0 ? (
-            <tr>
-              <td colSpan="9" style={{ textAlign: "center" }}>
-                No cargo found
-              </td>
-            </tr>
-          ) : (
-            safeCargo.map((c) => (
-              <tr key={c._id}>
-                
-                {/* Voyage */}
-                <td>
-                  {c.voyage
-                    ? `${
-                        c.voyage.vesselName ||
-                        c.voyage.vessel?.name ||
-                        "Unknown Vessel"
-                      } - ${c.voyage.voyageNumber || ""}`
-                    : "-"}
-                </td>
-
-                {/* Customer */}
-                <td>
-                  {c.customer?.companyName || c.customer?.name || "-"}
-                </td>
-
-                <td>{c.cargoType || "-"}</td>
-                <td>{c.quantity ?? "-"}</td>
-                <td>{c.unit || "-"}</td>
-
-                <td>${Number(c.rate ?? 0).toFixed(2)}</td>
-                <td>${Number(c.totalRevenue ?? 0).toFixed(2)}</td>
-
-                {/* Status */}
-                <td>
-                  {c.isActive ? (
-                    <span style={{ color: "green", fontWeight: "500" }}>
-                      Active
-                    </span>
-                  ) : (
-                    <span style={{ color: "red", fontWeight: "500" }}>
-                      Inactive
-                    </span>
-                  )}
-                </td>
-
-                {/* Actions */}
-                <td className="actions">
-                  <> 
-                    <button
-                      className="btn btn-edit"
-                      onClick={() => onEdit(c)}
-                    >
-                      Edit
-                    </button>
-                  </>
-                  {c.isActive ? (
-                    <>  
-                      <button
-                        className="btn btn-danger"
-                        onClick={() => onDelete(c._id)}
-                      >
-                        Deactivate
-                      </button>
-                    </>
-                  ) : (
-                    <>  
-                      <button
-                        className="btn btn-success"
-                        onClick={() => onRestore(c._id)}
-                      >
-                        Restore
-                      </button>
-                    </>
-                  )}
-                </td>
-              </tr>
-            ))
-          )}
-        </tbody>
-      </table>
-    </div>
+        // 🔥 RULE SYSTEM (SESSION 36 STANDARD)
+        showEdit: (c) => c.isActive === true,
+        showDelete: (c) => c.isActive === true,
+        showRestore: (c) => c.isActive === false,
+      }}
+      emptyMessage="No cargo found"
+    />
   );
 };
 
