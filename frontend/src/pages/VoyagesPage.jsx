@@ -39,7 +39,7 @@ const VoyagesPage = () => {
       try {
         const response = await getVoyages({ page, limit });
 
-        setVoyages(response.voyages || []);
+        setVoyages(response.data || []);
         setPages(response.pages || 1);
       } catch (error) {
         console.error("Error fetching voyages:", error);

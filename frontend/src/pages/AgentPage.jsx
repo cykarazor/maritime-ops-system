@@ -39,7 +39,7 @@ const AgentPage = () => {
       try {
         const response = await getAgents({ page, limit });
 
-        setAgents(response.agents || []);
+        setAgents(response.data || []);
         setPages(response.pages || 1);
       } catch (error) {
         console.error("Error fetching agents:", error);

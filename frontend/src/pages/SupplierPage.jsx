@@ -39,7 +39,7 @@ const SupplierPage = () => {
       try {
         const response = await getSuppliers({ page, limit });
 
-        setSuppliers(response.suppliers || []);
+        setSuppliers(response.data || []);
         setPages(response.pages || 1);
       } catch (error) {
         console.error("Error fetching suppliers:", error);

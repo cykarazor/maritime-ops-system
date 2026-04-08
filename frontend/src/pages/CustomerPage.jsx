@@ -39,7 +39,7 @@ const CustomerPage = () => {
       try {
         const response = await getCustomers({ page, limit });
 
-        setCustomers(response.customers || []);
+        setCustomers(response.data || []);
         setPages(response.pages || 1);
       } catch (error) {
         console.error("Error fetching customers:", error);

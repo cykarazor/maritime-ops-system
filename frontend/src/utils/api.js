@@ -6,11 +6,14 @@ import apiClient from "../api/client";
 // =========================
 export const getUsers = async (params = {}) => {
   const res = await apiClient.get("/users", { params });
+
+  const payload = res.data;
+
   return {
-    users: res.data?.users || [],
-    total: res.data?.total || 0,
-    page: res.data?.page || 1,
-    pages: res.data?.pages || 1,
+    data: payload?.users || [],
+    total: payload?.total || 0,
+    page: payload?.page || 1,
+    pages: payload?.pages || 1,
   };
 };
 
@@ -39,11 +42,14 @@ export const deleteUser = async (id) => {
 // =========================
 export const getSuppliers = async (params = {}) => {
   const res = await apiClient.get("/suppliers", { params });
+
+  const payload = res.data;
+
   return {
-    suppliers: res.data?.suppliers || [],
-    total: res.data?.total || 0,
-    page: res.data?.page || 1,
-    pages: res.data?.pages || 1,
+    data: payload?.suppliers || [],
+    total: payload?.total || 0,
+    page: payload?.page || 1,
+    pages: payload?.pages || 1,
   };
 };
 
@@ -77,11 +83,14 @@ export const restoreSupplier = async (id) => {
 // =========================
 export const getCustomers = async (params = {}) => {
   const res = await apiClient.get("/customers", { params });
+
+  const payload = res.data;
+
   return {
-    customers: res.data?.customers || [],
-    total: res.data?.total || 0,
-    page: res.data?.page || 1,
-    pages: res.data?.pages || 1,
+    data: payload?.customers || [],
+    total: payload?.total || 0,
+    page: payload?.page || 1,
+    pages: payload?.pages || 1,
   };
 };
 
@@ -120,11 +129,14 @@ export const getCustomerBalance = async (id) => {
 // =========================
 export const getInvoices = async (params = {}) => {
   const res = await apiClient.get("/invoices", { params });
+
+  const payload = res.data;
+
   return {
-    invoices: res.data?.invoices || [],
-    total: res.data?.total || 0,
-    page: res.data?.page || 1,
-    pages: res.data?.pages || 1,
+    data: payload?.invoices || [],
+    total: payload?.total || 0,
+    page: payload?.page || 1,
+    pages: payload?.pages || 1,
   };
 };
 
@@ -158,11 +170,14 @@ export const restoreInvoice = async (id) => {
 // =========================
 export const getCargo = async (params = {}) => {
   const res = await apiClient.get("/cargo", { params });
+
+  const payload = res.data;
+
   return {
-    cargo: res.data?.cargo || [],
-    total: res.data?.total || 0,
-    page: res.data?.page || 1,
-    pages: res.data?.pages || 1,
+    data: payload?.cargo || [],
+    page: payload?.page || 1,
+    pages: payload?.pages || 1,
+    total: payload?.total || 0,
   };
 };
 
@@ -196,11 +211,14 @@ export const restoreCargo = async (id) => {
 // =========================
 export const getAgents = async (params = {}) => {
   const res = await apiClient.get("/agents", { params });
+  
+  const payload = res.data;
+
   return {
-    agents: res.data?.agents || [],
-    total: res.data?.total || 0,
-    page: res.data?.page || 1,
-    pages: res.data?.pages || 1,
+    data: payload?.agents || [],
+    total: payload?.total || 0,
+    page: payload?.page || 1,
+    pages: payload?.pages || 1,
   };
 };
 
@@ -234,11 +252,14 @@ export const restoreAgent = async (id) => {
 // =========================
 export const getVoyages = async (params = {}) => {
   const res = await apiClient.get("/voyages", { params });
+
+  const payload = res.data;
+
   return {
-    voyages: res.data?.voyages || [],
-    total: res.data?.total || 0,
-    page: res.data?.page || 1,
-    pages: res.data?.pages || 1,
+    data: payload?.voyages || [],
+    total: payload?.total || 0,
+    page: payload?.page || 1,
+    pages: payload?.pages || 1,
   };
 };
 

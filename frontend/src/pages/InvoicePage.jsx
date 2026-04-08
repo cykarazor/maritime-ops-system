@@ -39,7 +39,7 @@ const InvoicePage = () => {
       try {
         const response = await getInvoices({ page, limit });
 
-        setInvoices(response.invoices || []);
+        setInvoices(response.data || []);
         setPages(response.pages || 1);
       } catch (err) {
         console.error("Failed to fetch invoices:", err);

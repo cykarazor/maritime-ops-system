@@ -38,30 +38,54 @@ const CargoPage = () => {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // =========================
-  // FETCH DATA
-  // =========================
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [cargoRes, customerRes, voyageRes] = await Promise.all([
-          getCargo({ page, limit }),
-          getCustomers(),
-          getVoyages()
-        ]);
+// FETCH CARGO
+// =========================
+useEffect(() => {
+  const fetchCargo = async () => {
+    try {
+      const response = await getCargo({ page, limit });
 
-        setCargo(cargoRes.cargo || []);
-        setPages(cargoRes.pages || 1);
+      setCargo(response.data || []);
+      setPages(response.pages || 1);
+    } catch (error) {
+      console.error("Error fetching cargo:", error);
+    }
+  };
 
-        setCustomers(customerRes.customers || []);
-        setVoyages(voyageRes.voyages || []);
+  fetchCargo();
+}, [page, limit, refreshTrigger]);
 
-      } catch (err) {
-        console.error("Error fetching cargo data:", err);
-      }
-    };
+// =========================
+// FETCH CUSTOMERS
+// =========================
+useEffect(() => {
+  const fetchCustomers = async () => {
+    try {
+      const response = await getCustomers();
+      setCustomers(response.data || []);
+    } catch (error) {
+      console.error("Error fetching customers:", error);
+    }
+  };
 
-    fetchData();
-  }, [page, limit, refreshTrigger]);
+  fetchCustomers();
+}, []);
+
+// =========================
+// FETCH VOYAGES
+// =========================
+useEffect(() => {
+  const fetchVoyages = async () => {
+    try {
+      const response = await getVoyages();
+      setVoyages(response.data || []);
+    } catch (error) {
+      console.error("Error fetching voyages:", error);
+    }
+  };
+
+  fetchVoyages();
+}, []);
 
   // =========================
   // HANDLERS (STANDARDIZED)
