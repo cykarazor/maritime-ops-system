@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Layout from "../components/Layout";
 import CustomerTable from "../components/CustomerTable";
 import CustomerForm from "../components/CustomerForm";
@@ -12,18 +12,16 @@ import {
   restoreCustomer
 } from "../utils/api";
 
-const CustomerPage = () => {
-  const [customers, setCustomers] = useState([]);
-  const [editingCustomer, setEditingCustomer] = useState(null);
+import { usePaginatedFetch } from "../hooks/usePaginatedFetch";
 
-  // ✅ STANDARDIZED FORM STATE
+const CustomerPage = () => {
+  const [editingCustomer, setEditingCustomer] = useState(null);
   const [showForm, setShowForm] = useState(false);
 
   // =========================
-  // PAGINATION STATE
+  // PAGINATION
   // =========================
   const [page, setPage] = useState(1);
-  const [pages, setPages] = useState(1);
   const [limit] = useState(5);
 
   // =========================
@@ -32,25 +30,21 @@ const CustomerPage = () => {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // =========================
-  // FETCH CUSTOMERS
+  // FETCH CUSTOMERS (HOOK)
   // =========================
-  useEffect(() => {
-    const fetchCustomers = async () => {
-      try {
-        const response = await getCustomers({ page, limit });
-
-        setCustomers(response.data || []);
-        setPages(response.pages || 1);
-      } catch (error) {
-        console.error("Error fetching customers:", error);
-      }
-    };
-
-    fetchCustomers();
-  }, [page, limit, refreshTrigger]);
+  const {
+    data: customers,
+    pages,
+    loading,
+    error
+  } = usePaginatedFetch(getCustomers, {
+    page,
+    limit,
+    refreshTrigger
+  });
 
   // =========================
-  // HANDLERS (STANDARDIZED)
+  // HANDLERS
   // =========================
   const handleCreateClick = () => {
     setEditingCustomer(null);
@@ -100,7 +94,6 @@ const CustomerPage = () => {
   const handleDeactivate = async (id) => {
     try {
       if (!window.confirm("Deactivate this customer?")) return;
-
       await deleteCustomer(id);
       setRefreshTrigger((prev) => prev + 1);
     } catch (error) {
@@ -129,7 +122,11 @@ const CustomerPage = () => {
         + Add Customer
       </button>
 
-      {/* FORM (CONTROLLED VISIBILITY) */}
+      {/* LOADING / ERROR */}
+      {loading && <p>Loading customers...</p>}
+      {error && <p style={{ color: "red" }}>{error}</p>}
+
+      {/* FORM */}
       {showForm && (
         <CustomerForm
           onSubmit={

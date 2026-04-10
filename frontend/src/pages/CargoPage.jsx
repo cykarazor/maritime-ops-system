@@ -4,6 +4,7 @@ import Layout from "../components/Layout";
 import CargoTable from "../components/CargoTable";
 import CargoForm from "../components/CargoForm";
 import Pagination from "../components/Pagination";
+import { usePaginatedFetch } from "../hooks/usePaginatedFetch";
 
 import {
   getCargo,
@@ -16,7 +17,7 @@ import {
 } from "../utils/api";
 
 const CargoPage = () => {
-  const [cargo, setCargo] = useState([]);
+  //const [cargo, setCargo] = useState([]);
   const [editing, setEditing] = useState(null);
 
   // ✅ STANDARDIZED UI STATE
@@ -29,7 +30,7 @@ const CargoPage = () => {
   // PAGINATION
   // =========================
   const [page, setPage] = useState(1);
-  const [pages, setPages] = useState(1);
+  //const [pages, setPages] = useState(1);
   const [limit] = useState(5);
 
   // =========================
@@ -40,20 +41,12 @@ const CargoPage = () => {
   // =========================
 // FETCH CARGO
 // =========================
-useEffect(() => {
-  const fetchCargo = async () => {
-    try {
-      const response = await getCargo({ page, limit });
-
-      setCargo(response.data || []);
-      setPages(response.pages || 1);
-    } catch (error) {
-      console.error("Error fetching cargo:", error);
-    }
-  };
-
-  fetchCargo();
-}, [page, limit, refreshTrigger]);
+const {
+  data: cargo,
+  pages,
+  loading,
+  error
+} = usePaginatedFetch(getCargo, { page, limit, refreshTrigger });
 
 // =========================
 // FETCH CUSTOMERS
@@ -180,6 +173,9 @@ useEffect(() => {
           voyages={voyages}
         />
       )}
+
+      {loading && <p>Loading cargo...</p>}
+      {error && <p style={{ color: "red" }}>{error}</p>}
 
       {/* TABLE */}
       <CargoTable

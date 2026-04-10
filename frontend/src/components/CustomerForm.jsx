@@ -8,12 +8,16 @@ const CustomerForm = ({ onSubmit, initialData, onCancel }) => {
     contactPerson: "",
     email: "",
     phone: "",
-    notes: ""
+    notes: "",
   });
 
-  // STANDARD: detect edit mode
+  // Detect edit mode
   const isEdit = !!initialData;
+  const isInactive = initialData?.isDeleted;
 
+  // =========================
+  // LOAD EDIT DATA
+  // =========================
   useEffect(() => {
     if (initialData) {
       setFormData({
@@ -23,24 +27,30 @@ const CustomerForm = ({ onSubmit, initialData, onCancel }) => {
         contactPerson: initialData.contactPerson || "",
         email: initialData.email || "",
         phone: initialData.phone || "",
-        notes: initialData.notes || ""
+        notes: initialData.notes || "",
       });
     }
   }, [initialData]);
 
+  // =========================
+  // HANDLE CHANGE
+  // =========================
   const handleChange = (e) => {
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     });
   };
 
+  // =========================
+  // SUBMIT
+  // =========================
   const handleSubmit = (e) => {
     e.preventDefault();
 
     onSubmit(formData);
 
-    // STANDARD FIX: only reset in CREATE mode
+    // reset ONLY on create mode
     if (!isEdit) {
       setFormData({
         name: "",
@@ -49,7 +59,7 @@ const CustomerForm = ({ onSubmit, initialData, onCancel }) => {
         contactPerson: "",
         email: "",
         phone: "",
-        notes: ""
+        notes: "",
       });
     }
   };
@@ -57,8 +67,15 @@ const CustomerForm = ({ onSubmit, initialData, onCancel }) => {
   return (
     <form onSubmit={handleSubmit} className="form-container">
 
-      {/* STANDARD TITLE */}
+      {/* TITLE */}
       <h3>{isEdit ? "Edit Customer" : "Create Customer"}</h3>
+
+      {/* Inactive warning (STANDARD) */}
+      {isInactive && (
+        <p style={{ color: "red" }}>
+          This customer is inactive. Restore it before editing.
+        </p>
+      )}
 
       {/* Company Name */}
       <div className="form-group">
@@ -67,6 +84,7 @@ const CustomerForm = ({ onSubmit, initialData, onCancel }) => {
           name="companyName"
           value={formData.companyName}
           onChange={handleChange}
+          disabled={isInactive}
         />
       </div>
 
@@ -78,6 +96,7 @@ const CustomerForm = ({ onSubmit, initialData, onCancel }) => {
           value={formData.name}
           onChange={handleChange}
           required
+          disabled={isInactive}
         />
       </div>
 
@@ -89,6 +108,7 @@ const CustomerForm = ({ onSubmit, initialData, onCancel }) => {
           value={formData.country}
           onChange={handleChange}
           required
+          disabled={isInactive}
         />
       </div>
 
@@ -99,6 +119,7 @@ const CustomerForm = ({ onSubmit, initialData, onCancel }) => {
           name="contactPerson"
           value={formData.contactPerson}
           onChange={handleChange}
+          disabled={isInactive}
         />
       </div>
 
@@ -109,6 +130,7 @@ const CustomerForm = ({ onSubmit, initialData, onCancel }) => {
           name="email"
           value={formData.email}
           onChange={handleChange}
+          disabled={isInactive}
         />
       </div>
 
@@ -119,6 +141,7 @@ const CustomerForm = ({ onSubmit, initialData, onCancel }) => {
           name="phone"
           value={formData.phone}
           onChange={handleChange}
+          disabled={isInactive}
         />
       </div>
 
@@ -129,13 +152,13 @@ const CustomerForm = ({ onSubmit, initialData, onCancel }) => {
           name="notes"
           value={formData.notes}
           onChange={handleChange}
+          disabled={isInactive}
         />
       </div>
 
-      {/* STANDARD BUTTON BLOCK */}
+      {/* BUTTONS */}
       <div className="form-actions">
 
-        {/* Cancel FIRST */}
         <button
           type="button"
           className="btn btn-secondary"
@@ -144,12 +167,16 @@ const CustomerForm = ({ onSubmit, initialData, onCancel }) => {
           Cancel
         </button>
 
-        {/* Submit SECOND */}
-        <button type="submit" className="btn btn-primary">
+        <button
+          type="submit"
+          className="btn btn-primary"
+          disabled={isInactive}
+        >
           {isEdit ? "Update Customer" : "Save Customer"}
         </button>
 
       </div>
+
     </form>
   );
 };

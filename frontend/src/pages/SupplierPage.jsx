@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Layout from "../components/Layout";
 import SupplierTable from "../components/SupplierTable";
 import SupplierForm from "../components/SupplierForm";
@@ -12,18 +12,16 @@ import {
   restoreSupplier
 } from "../utils/api";
 
-const SupplierPage = () => {
-  const [suppliers, setSuppliers] = useState([]);
-  const [editingSupplier, setEditingSupplier] = useState(null);
+import { usePaginatedFetch } from "../hooks/usePaginatedFetch";
 
-  // ✅ STANDARDIZED FORM STATE
+const SupplierPage = () => {
+  const [editingSupplier, setEditingSupplier] = useState(null);
   const [showForm, setShowForm] = useState(false);
 
   // =========================
-  // PAGINATION STATE
+  // PAGINATION
   // =========================
   const [page, setPage] = useState(1);
-  const [pages, setPages] = useState(1);
   const [limit] = useState(5);
 
   // =========================
@@ -32,25 +30,21 @@ const SupplierPage = () => {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // =========================
-  // FETCH SUPPLIERS
+  // FETCH SUPPLIERS (HOOK)
   // =========================
-  useEffect(() => {
-    const fetchSuppliers = async () => {
-      try {
-        const response = await getSuppliers({ page, limit });
-
-        setSuppliers(response.data || []);
-        setPages(response.pages || 1);
-      } catch (error) {
-        console.error("Error fetching suppliers:", error);
-      }
-    };
-
-    fetchSuppliers();
-  }, [page, limit, refreshTrigger]);
+  const {
+    data: suppliers,
+    pages,
+    loading,
+    error
+  } = usePaginatedFetch(getSuppliers, {
+    page,
+    limit,
+    refreshTrigger
+  });
 
   // =========================
-  // HANDLERS (STANDARDIZED)
+  // HANDLERS
   // =========================
   const handleCreateClick = () => {
     setEditingSupplier(null);
@@ -95,12 +89,11 @@ const SupplierPage = () => {
   };
 
   // =========================
-  // DELETE (DEACTIVATE)
+  // DELETE
   // =========================
   const handleDeactivate = async (id) => {
     try {
       if (!window.confirm("Deactivate this supplier?")) return;
-
       await deleteSupplier(id);
       setRefreshTrigger((prev) => prev + 1);
     } catch (error) {
@@ -124,16 +117,16 @@ const SupplierPage = () => {
     <Layout>
       <h1>Suppliers</h1>
 
-      {/* =========================
-          CREATE BUTTON
-      ========================= */}
+      {/* CREATE BUTTON */}
       <button className="btn btn-primary" onClick={handleCreateClick}>
         + Add Supplier
       </button>
 
-      {/* =========================
-          FORM (CONTROLLED VISIBILITY)
-      ========================= */}
+      {/* LOADING / ERROR */}
+      {loading && <p>Loading suppliers...</p>}
+      {error && <p style={{ color: "red" }}>{error}</p>}
+
+      {/* FORM */}
       {showForm && (
         <SupplierForm
           initialData={editingSupplier}
@@ -146,9 +139,7 @@ const SupplierPage = () => {
         />
       )}
 
-      {/* =========================
-          TABLE
-      ========================= */}
+      {/* TABLE */}
       <SupplierTable
         suppliers={suppliers}
         onEdit={handleEditClick}
@@ -156,9 +147,7 @@ const SupplierPage = () => {
         onRestore={handleRestore}
       />
 
-      {/* =========================
-          PAGINATION
-      ========================= */}
+      {/* PAGINATION */}
       <Pagination
         page={page}
         pages={pages}

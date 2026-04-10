@@ -28,8 +28,8 @@ const VoyageForm = ({ onSubmit, initialData, onCancel }) => {
         const custRes = await getCustomers();
         const agentRes = await getAgents();
 
-        setCustomers(custRes.customers || []);
-        setAgents(agentRes.agents || []);
+        setCustomers(custRes.data || []);
+        setAgents(agentRes.data || []);
       } catch (err) {
         console.error("Error fetching dropdown data:", err);
       }

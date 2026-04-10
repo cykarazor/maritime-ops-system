@@ -18,12 +18,15 @@ const SupplierForm = ({ initialData, onSubmit, onCancel }) => {
   });
 
   // =========================
-  // STANDARD EDIT FLAG
+  // STANDARD EDIT MODE FLAG
   // =========================
   const isEdit = !!initialData;
 
+  // same pattern as VoyageForm
+  const isInactive = initialData?.isDeleted;
+
   // =========================
-  // HYDRATE FORM IN EDIT MODE
+  // HYDRATE FORM (EDIT MODE)
   // =========================
   useEffect(() => {
     if (initialData) {
@@ -45,6 +48,9 @@ const SupplierForm = ({ initialData, onSubmit, onCancel }) => {
     }
   }, [initialData]);
 
+  // =========================
+  // HANDLE CHANGE
+  // =========================
   const handleChange = (e) => {
     const { name, value } = e.target;
 
@@ -54,6 +60,9 @@ const SupplierForm = ({ initialData, onSubmit, onCancel }) => {
     }));
   };
 
+  // =========================
+  // SUBMIT (STANDARD RULE)
+  // =========================
   const handleSubmit = (e) => {
     e.preventDefault();
 
@@ -64,7 +73,7 @@ const SupplierForm = ({ initialData, onSubmit, onCancel }) => {
       openingBalance: Number(formData.openingBalance),
     });
 
-    // STANDARD RULE: reset only in create mode
+    // reset ONLY in create mode (standard rule)
     if (!isEdit) {
       setFormData({
         companyName: "",
@@ -82,15 +91,12 @@ const SupplierForm = ({ initialData, onSubmit, onCancel }) => {
     }
   };
 
-  const isInactive = initialData?.isActive === false;
-
   return (
     <form className="form-container" onSubmit={handleSubmit}>
 
       {/* STANDARD TITLE */}
       <h3>{isEdit ? "Edit Supplier" : "Create Supplier"}</h3>
 
-      {/* Inactive warning (kept as-is business rule) */}
       {isInactive && (
         <p style={{ color: "red" }}>
           This supplier is inactive. Restore it before editing.
@@ -229,7 +235,6 @@ const SupplierForm = ({ initialData, onSubmit, onCancel }) => {
       {/* STANDARD BUTTON BLOCK */}
       <div className="form-actions">
 
-        {/* Cancel FIRST (SYSTEM STANDARD) */}
         <button
           type="button"
           className="btn btn-secondary"
@@ -238,10 +243,9 @@ const SupplierForm = ({ initialData, onSubmit, onCancel }) => {
           Cancel
         </button>
 
-        {/* Submit SECOND */}
         <button
-          className="btn btn-primary"
           type="submit"
+          className="btn btn-primary"
           disabled={isInactive}
         >
           {isEdit ? "Update Supplier" : "Save Supplier"}

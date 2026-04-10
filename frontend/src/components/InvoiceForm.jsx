@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { getVoyages, getCustomers, getSuppliers } from "../utils/api";
 
-//Testing git
-
 const InvoiceForm = ({ initialData, onSubmit, onCancel }) => {
   const [formData, setFormData] = useState({
     invoiceNumber: "",
@@ -23,27 +21,27 @@ const InvoiceForm = ({ initialData, onSubmit, onCancel }) => {
   const [suppliers, setSuppliers] = useState([]);
 
   // =========================
-  // STANDARD EDIT MODE FLAG
+  // EDIT MODE
   // =========================
   const isEdit = !!initialData;
 
   // =========================
-  // LOAD DROPDOWNS
+  // LOAD DROPDOWNS (STANDARDISED LIKE VOYAGE FORM)
   // =========================
   useEffect(() => {
     const fetchData = async () => {
       try {
         const [voy, cust, sup] = await Promise.all([
-          getVoyages(),
+          getVoyages({ page: 1, limit: 1000 }),
           getCustomers(),
           getSuppliers(),
         ]);
 
-        setVoyages(voy.voyages || []);
-        setCustomers(cust.customers || []);
-        setSuppliers(sup.suppliers || []);
+        setVoyages(voy.data || []);
+        setCustomers(cust.data || []);
+        setSuppliers(sup.data || []);
       } catch (err) {
-        console.error("Error loading invoice form data:", err);
+        console.error("Invoice dropdown load error:", err);
       }
     };
 
@@ -51,29 +49,16 @@ const InvoiceForm = ({ initialData, onSubmit, onCancel }) => {
   }, []);
 
   // =========================
-  // EDIT HYDRATION (STANDARDIZED)
+  // EDIT HYDRATION (STANDARD STYLE)
   // =========================
   useEffect(() => {
     if (initialData) {
       setFormData({
         invoiceNumber: initialData.invoiceNumber || "",
         type: initialData.type || "AR",
-
-        voyage:
-          initialData.voyage?._id ||
-          initialData.voyage ||
-          "",
-
-        customer:
-          initialData.customer?._id ||
-          initialData.customer ||
-          "",
-
-        supplier:
-          initialData.supplier?._id ||
-          initialData.supplier ||
-          "",
-
+        voyage: initialData.voyage?._id || initialData.voyage || "",
+        customer: initialData.customer?._id || initialData.customer || "",
+        supplier: initialData.supplier?._id || initialData.supplier || "",
         invoiceDate: initialData.invoiceDate || "",
         dueDate: initialData.dueDate || "",
         amount: initialData.amount || 0,
@@ -93,7 +78,7 @@ const InvoiceForm = ({ initialData, onSubmit, onCancel }) => {
     setFormData((prev) => {
       let updated = { ...prev, [name]: value };
 
-      // enforce AR/AP rules
+      // AR/AP RULE (same logic as before, preserved)
       if (name === "type") {
         if (value === "AR") updated.supplier = "";
         if (value === "AP") updated.customer = "";
@@ -104,7 +89,7 @@ const InvoiceForm = ({ initialData, onSubmit, onCancel }) => {
   };
 
   // =========================
-  // SUBMIT (STANDARDIZED)
+  // SUBMIT (STANDARD STYLE)
   // =========================
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -148,9 +133,9 @@ const InvoiceForm = ({ initialData, onSubmit, onCancel }) => {
   };
 
   return (
-    <form className="form-container" onSubmit={handleSubmit}>
+    <form onSubmit={handleSubmit} className="form-container">
 
-      {/* STANDARD TITLE */}
+      {/* TITLE (STANDARD) */}
       <h3>{isEdit ? "Edit Invoice" : "Create Invoice"}</h3>
 
       {/* Invoice Number */}
@@ -180,7 +165,7 @@ const InvoiceForm = ({ initialData, onSubmit, onCancel }) => {
           <option value="">Select Voyage</option>
           {voyages.map((v) => (
             <option key={v._id} value={v._id}>
-              {v.vesselName || v.name} - {v.voyageNumber}
+              {v.vesselName} - {v.voyageNumber}
             </option>
           ))}
         </select>
@@ -198,7 +183,7 @@ const InvoiceForm = ({ initialData, onSubmit, onCancel }) => {
             <option value="">Select Customer</option>
             {customers.map((c) => (
               <option key={c._id} value={c._id}>
-                {c.companyName}
+                {c.companyName || c.name}
               </option>
             ))}
           </select>
@@ -245,7 +230,7 @@ const InvoiceForm = ({ initialData, onSubmit, onCancel }) => {
         />
       </div>
 
-      {/* Amounts */}
+      {/* Amount */}
       <div className="form-group">
         <label>Amount</label>
         <input
@@ -256,6 +241,7 @@ const InvoiceForm = ({ initialData, onSubmit, onCancel }) => {
         />
       </div>
 
+      {/* Paid */}
       <div className="form-group">
         <label>Amount Paid</label>
         <input
@@ -290,10 +276,8 @@ const InvoiceForm = ({ initialData, onSubmit, onCancel }) => {
         />
       </div>
 
-      {/* STANDARD BUTTON BLOCK */}
+      {/* BUTTONS (STANDARD LIKE VOYAGE) */}
       <div className="form-actions">
-
-        {/* Cancel FIRST (STANDARD SYSTEM RULE) */}
         <button
           type="button"
           className="btn btn-secondary"
@@ -302,12 +286,11 @@ const InvoiceForm = ({ initialData, onSubmit, onCancel }) => {
           Cancel
         </button>
 
-        {/* Submit SECOND */}
         <button type="submit" className="btn btn-primary">
           {isEdit ? "Update Invoice" : "Save Invoice"}
         </button>
-
       </div>
+
     </form>
   );
 };

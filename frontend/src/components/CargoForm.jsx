@@ -1,7 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { getVoyages, getCustomers } from "../utils/api";
 
-const CargoForm = ({ initialData, onSubmit, onCancel }) => {
+const CargoForm = ({
+  initialData,
+  onSubmit,
+  onCancel,
+  voyages = [],
+  customers = [],
+}) => {
   const [formData, setFormData] = useState({
     voyage: "",
     customer: "",
@@ -13,19 +18,13 @@ const CargoForm = ({ initialData, onSubmit, onCancel }) => {
     notes: "",
   });
 
-  const [voyages, setVoyages] = useState([]);
-  const [customers, setCustomers] = useState([]);
-
-  // Detect edit mode (STANDARD like AgentForm)
+  // Detect edit mode
   const isEdit = !!initialData;
+  const isInactive = initialData?.isDeleted;
 
-  // Load dropdown data
-  useEffect(() => {
-    fetchVoyages();
-    fetchCustomers();
-  }, []);
-
-  // Populate form in edit mode (STANDARD pattern)
+  // =========================
+  // LOAD EDIT DATA
+  // =========================
   useEffect(() => {
     if (initialData) {
       setFormData({
@@ -41,44 +40,33 @@ const CargoForm = ({ initialData, onSubmit, onCancel }) => {
     }
   }, [initialData]);
 
-  const fetchVoyages = async () => {
-    try {
-      const { voyages } = await getVoyages();
-      setVoyages(voyages || []);
-    } catch (err) {
-      console.error("Error fetching voyages:", err);
-    }
-  };
-
-  const fetchCustomers = async () => {
-    try {
-      const { customers } = await getCustomers();
-      setCustomers(customers || []);
-    } catch (err) {
-      console.error("Error fetching customers:", err);
-    }
-  };
-
+  // =========================
+  // HANDLE CHANGE
+  // =========================
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    let updatedData = {
+    let updated = {
       ...formData,
       [name]: value,
     };
 
+    // auto calculate revenue
     if (name === "quantity" || name === "rate") {
       const quantity =
-        name === "quantity" ? Number(value) : Number(updatedData.quantity);
+        name === "quantity" ? Number(value) : Number(updated.quantity);
       const rate =
-        name === "rate" ? Number(value) : Number(updatedData.rate);
+        name === "rate" ? Number(value) : Number(updated.rate);
 
-      updatedData.totalRevenue = quantity * rate;
+      updated.totalRevenue = quantity * rate;
     }
 
-    setFormData(updatedData);
+    setFormData(updated);
   };
 
+  // =========================
+  // SUBMIT
+  // =========================
   const handleSubmit = (e) => {
     e.preventDefault();
 
@@ -88,7 +76,7 @@ const CargoForm = ({ initialData, onSubmit, onCancel }) => {
       rate: Number(formData.rate),
     });
 
-    // ONLY reset in CREATE mode (STANDARD FIX)
+    // reset only on create
     if (!isEdit) {
       setFormData({
         voyage: "",
@@ -103,14 +91,20 @@ const CargoForm = ({ initialData, onSubmit, onCancel }) => {
     }
   };
 
+  // safety guards
   const safeVoyages = Array.isArray(voyages) ? voyages : [];
   const safeCustomers = Array.isArray(customers) ? customers : [];
 
   return (
     <form onSubmit={handleSubmit} className="form-container">
 
-      {/* STANDARD TITLE (same as AgentForm) */}
       <h3>{isEdit ? "Edit Cargo" : "Create Cargo"}</h3>
+
+      {isInactive && (
+        <p style={{ color: "red" }}>
+          This cargo is inactive. Restore it before editing.
+        </p>
+      )}
 
       {/* Voyage */}
       <div className="form-group">
@@ -120,11 +114,12 @@ const CargoForm = ({ initialData, onSubmit, onCancel }) => {
           value={formData.voyage}
           onChange={handleChange}
           required
+          disabled={isInactive}
         >
           <option value="">Select Voyage</option>
           {safeVoyages.map((v) => (
             <option key={v._id} value={v._id}>
-              {v.vesselName || ""} - {v.voyageNumber}
+              {v.vesselName} - {v.voyageNumber}
             </option>
           ))}
         </select>
@@ -138,6 +133,7 @@ const CargoForm = ({ initialData, onSubmit, onCancel }) => {
           value={formData.customer}
           onChange={handleChange}
           required
+          disabled={isInactive}
         >
           <option value="">Select Customer</option>
           {safeCustomers.map((c) => (
@@ -155,7 +151,7 @@ const CargoForm = ({ initialData, onSubmit, onCancel }) => {
           name="cargoType"
           value={formData.cargoType}
           onChange={handleChange}
-          required
+          disabled={isInactive}
         />
       </div>
 
@@ -167,14 +163,19 @@ const CargoForm = ({ initialData, onSubmit, onCancel }) => {
           name="quantity"
           value={formData.quantity}
           onChange={handleChange}
-          required
+          disabled={isInactive}
         />
       </div>
 
       {/* Unit */}
       <div className="form-group">
         <label>Unit</label>
-        <select name="unit" value={formData.unit} onChange={handleChange}>
+        <select
+          name="unit"
+          value={formData.unit}
+          onChange={handleChange}
+          disabled={isInactive}
+        >
           <option value="MT">MT</option>
           <option value="KG">KG</option>
         </select>
@@ -188,7 +189,7 @@ const CargoForm = ({ initialData, onSubmit, onCancel }) => {
           name="rate"
           value={formData.rate}
           onChange={handleChange}
-          required
+          disabled={isInactive}
         />
       </div>
 
@@ -197,7 +198,6 @@ const CargoForm = ({ initialData, onSubmit, onCancel }) => {
         <label>Total Revenue</label>
         <input
           type="number"
-          name="totalRevenue"
           value={formData.totalRevenue}
           readOnly
         />
@@ -210,13 +210,12 @@ const CargoForm = ({ initialData, onSubmit, onCancel }) => {
           name="notes"
           value={formData.notes}
           onChange={handleChange}
+          disabled={isInactive}
         />
       </div>
 
-      {/* STANDARD BUTTON BLOCK (MATCHES AGENT FORM) */}
+      {/* BUTTONS */}
       <div className="form-actions">
-
-        {/* Cancel FIRST (STANDARD) */}
         <button
           type="button"
           className="btn btn-secondary"
@@ -225,12 +224,15 @@ const CargoForm = ({ initialData, onSubmit, onCancel }) => {
           Cancel
         </button>
 
-        {/* Submit SECOND */}
-        <button type="submit" className="btn btn-primary">
+        <button
+          type="submit"
+          className="btn btn-primary"
+          disabled={isInactive}
+        >
           {isEdit ? "Update Cargo" : "Save Cargo"}
         </button>
-
       </div>
+
     </form>
   );
 };

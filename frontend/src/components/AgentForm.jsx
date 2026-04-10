@@ -1,19 +1,22 @@
 import React, { useState, useEffect } from "react";
 
 const AgentForm = ({ onSubmit, initialData, onCancel }) => {
-  
   const [formData, setFormData] = useState({
     companyName: "",
     assignedIsland: "",
     contactPerson: "",
     email: "",
     phone: "",
-    notes: ""
+    notes: "",
   });
 
-  //Detect Edit Mode and Populate Form
+  // Detect edit mode
   const isEdit = !!initialData;
-  
+  const isInactive = initialData?.isDeleted;
+
+  // =========================
+  // LOAD EDIT DATA
+  // =========================
   useEffect(() => {
     if (initialData) {
       setFormData({
@@ -22,43 +25,56 @@ const AgentForm = ({ onSubmit, initialData, onCancel }) => {
         contactPerson: initialData.contactPerson || "",
         email: initialData.email || "",
         phone: initialData.phone || "",
-        notes: initialData.notes || ""
+        notes: initialData.notes || "",
       });
     }
   }, [initialData]);
 
+  // =========================
+  // HANDLE CHANGE
+  // =========================
   const handleChange = (e) => {
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     });
   };
 
+  // =========================
+  // SUBMIT
+  // =========================
   const handleSubmit = (e) => {
     e.preventDefault();
+
     onSubmit(formData);
-   
+
+    // RESET ONLY ON CREATE (STANDARD RULE)
+    if (!isEdit) {
       setFormData({
         companyName: "",
         assignedIsland: "",
         contactPerson: "",
         email: "",
         phone: "",
-        notes: ""
+        notes: "",
       });
-    
+    }
   };
 
-
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="form-container"
-    >
-      {/* ✅ NEW: FORM TITLE */}
-      <h3>{initialData ? "Edit Agent" : "Create Agent"}</h3>
-      {/* ✅ NEW STRUCTURED FORM */}
+    <form onSubmit={handleSubmit} className="form-container">
 
+      {/* TITLE */}
+      <h3>{isEdit ? "Edit Agent" : "Create Agent"}</h3>
+
+      {/* Inactive warning */}
+      {isInactive && (
+        <p style={{ color: "red" }}>
+          This agent is inactive. Restore it before editing.
+        </p>
+      )}
+
+      {/* Company Name */}
       <div className="form-group">
         <label>Company Name</label>
         <input
@@ -66,9 +82,11 @@ const AgentForm = ({ onSubmit, initialData, onCancel }) => {
           value={formData.companyName}
           onChange={handleChange}
           required
+          disabled={isInactive}
         />
       </div>
 
+      {/* Assigned Island */}
       <div className="form-group">
         <label>Assigned Island</label>
         <input
@@ -76,49 +94,57 @@ const AgentForm = ({ onSubmit, initialData, onCancel }) => {
           value={formData.assignedIsland}
           onChange={handleChange}
           required
+          disabled={isInactive}
         />
       </div>
 
+      {/* Contact Person */}
       <div className="form-group">
         <label>Contact Person</label>
         <input
           name="contactPerson"
           value={formData.contactPerson}
           onChange={handleChange}
+          disabled={isInactive}
         />
       </div>
 
+      {/* Email */}
       <div className="form-group">
         <label>Email</label>
         <input
           name="email"
           value={formData.email}
           onChange={handleChange}
+          disabled={isInactive}
         />
       </div>
 
+      {/* Phone */}
       <div className="form-group">
         <label>Phone</label>
         <input
           name="phone"
           value={formData.phone}
           onChange={handleChange}
+          disabled={isInactive}
         />
       </div>
 
+      {/* Notes */}
       <div className="form-group">
         <label>Notes</label>
         <textarea
           name="notes"
           value={formData.notes}
           onChange={handleChange}
+          disabled={isInactive}
         />
       </div>
 
-      {/* ✅ NEW STANDARD BUTTON */}
+      {/* BUTTONS */}
       <div className="form-actions">
 
-        {/* Cancel Button */}
         <button
           type="button"
           className="btn btn-secondary"
@@ -127,8 +153,11 @@ const AgentForm = ({ onSubmit, initialData, onCancel }) => {
           Cancel
         </button>
 
-        {/* Submit Button (Dynamic Save/Update) */}
-        <button type="submit" className="btn btn-primary">
+        <button
+          type="submit"
+          className="btn btn-primary"
+          disabled={isInactive}
+        >
           {isEdit ? "Update Agent" : "Save Agent"}
         </button>
 

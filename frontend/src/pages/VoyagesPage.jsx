@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+// src/pages/VoyagesPage.jsx
+import React, { useState } from "react";
 import Layout from "../components/Layout";
 import VoyageTable from "../components/VoyageTable";
 import VoyageForm from "../components/VoyageForm";
@@ -12,18 +13,17 @@ import {
   restoreVoyage,
 } from "../utils/api";
 
-const VoyagesPage = () => {
-  const [voyages, setVoyages] = useState([]);
-  const [editingVoyage, setEditingVoyage] = useState(null);
+import { usePaginatedFetch } from "../hooks/usePaginatedFetch";
+import { useReferenceData } from "../hooks/useReferenceData";
 
-  // ✅ STANDARDIZED UI STATE
+const VoyagesPage = () => {
+  const [editingVoyage, setEditingVoyage] = useState(null);
   const [showForm, setShowForm] = useState(false);
 
   // =========================
   // PAGINATION
   // =========================
   const [page, setPage] = useState(1);
-  const [pages, setPages] = useState(1);
   const [limit] = useState(5);
 
   // =========================
@@ -32,25 +32,32 @@ const VoyagesPage = () => {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // =========================
-  // FETCH
+  // FETCH VOYAGES (TABLE DATA)
   // =========================
-  useEffect(() => {
-    const fetchVoyages = async () => {
-      try {
-        const response = await getVoyages({ page, limit });
-
-        setVoyages(response.data || []);
-        setPages(response.pages || 1);
-      } catch (error) {
-        console.error("Error fetching voyages:", error);
-      }
-    };
-
-    fetchVoyages();
-  }, [page, limit, refreshTrigger]);
+  const {
+    data: voyages,
+    pages,
+    loading,
+    error,
+  } = usePaginatedFetch(getVoyages, {
+    page,
+    limit,
+    refreshTrigger,
+  });
 
   // =========================
-  // HANDLERS (STANDARDIZED)
+  // FETCH REFERENCE DATA (FORMS)
+  // =========================
+  const {
+    customers,
+    suppliers,
+    voyages: voyageOptions,
+    loading: refLoading,
+    error: refError,
+  } = useReferenceData();
+
+  // =========================
+  // HANDLERS
   // =========================
   const handleCreateClick = () => {
     setEditingVoyage(null);
@@ -100,7 +107,6 @@ const VoyagesPage = () => {
   const handleDeactivate = async (id) => {
     try {
       if (!window.confirm("Deactivate this voyage?")) return;
-
       await deleteVoyage(id);
       setRefreshTrigger((prev) => prev + 1);
     } catch (error) {
@@ -129,9 +135,26 @@ const VoyagesPage = () => {
         + Add Voyage
       </button>
 
-      {/* FORM */}
+      {/* =========================
+          LOADING / ERROR (TABLE)
+      ========================= */}
+      {loading && <p>Loading voyages...</p>}
+      {error && <p style={{ color: "red" }}>{error}</p>}
+
+      {/* =========================
+          LOADING / ERROR (FORM DATA)
+      ========================= */}
+      {refLoading && <p>Loading form data...</p>}
+      {refError && <p style={{ color: "red" }}>{refError}</p>}
+
+      {/* =========================
+          FORM
+      ========================= */}
       {showForm && (
         <VoyageForm
+          customers={customers}
+          suppliers={suppliers}
+          voyages={voyageOptions}
           onSubmit={
             editingVoyage
               ? (data) => handleUpdate(editingVoyage._id, data)
@@ -142,7 +165,9 @@ const VoyagesPage = () => {
         />
       )}
 
-      {/* TABLE */}
+      {/* =========================
+          TABLE
+      ========================= */}
       <VoyageTable
         voyages={voyages}
         onEdit={handleEditClick}
@@ -150,7 +175,9 @@ const VoyagesPage = () => {
         onRestore={handleRestore}
       />
 
-      {/* PAGINATION */}
+      {/* =========================
+          PAGINATION
+      ========================= */}
       <Pagination
         page={page}
         pages={pages}

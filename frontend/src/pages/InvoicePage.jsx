@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Layout from "../components/Layout";
 import InvoiceTable from "../components/InvoiceTable";
 import InvoiceForm from "../components/InvoiceForm";
@@ -12,18 +12,16 @@ import {
   restoreInvoice,
 } from "../utils/api";
 
-const InvoicePage = () => {
-  const [invoices, setInvoices] = useState([]);
-  const [editing, setEditing] = useState(null);
+import { usePaginatedFetch } from "../hooks/usePaginatedFetch";
 
-  // ✅ STANDARD UI STATE
+const InvoicePage = () => {
+  const [editing, setEditing] = useState(null);
   const [showForm, setShowForm] = useState(false);
 
   // =========================
   // PAGINATION
   // =========================
   const [page, setPage] = useState(1);
-  const [pages, setPages] = useState(1);
   const [limit] = useState(5);
 
   // =========================
@@ -32,25 +30,21 @@ const InvoicePage = () => {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // =========================
-  // FETCH INVOICES
+  // FETCH INVOICES (HOOK)
   // =========================
-  useEffect(() => {
-    const fetchInvoices = async () => {
-      try {
-        const response = await getInvoices({ page, limit });
-
-        setInvoices(response.data || []);
-        setPages(response.pages || 1);
-      } catch (err) {
-        console.error("Failed to fetch invoices:", err);
-      }
-    };
-
-    fetchInvoices();
-  }, [page, limit, refreshTrigger]);
+  const {
+    data: invoices,
+    pages,
+    loading,
+    error
+  } = usePaginatedFetch(getInvoices, {
+    page,
+    limit,
+    refreshTrigger
+  });
 
   // =========================
-  // HANDLERS (STANDARDIZED)
+  // HANDLERS
   // =========================
   const handleCreateClick = () => {
     setEditing(null);
@@ -79,8 +73,8 @@ const InvoicePage = () => {
   const handleCreate = async (invoice) => {
     try {
       await createInvoice(invoice);
-      setShowForm(false);
       setRefreshTrigger((prev) => prev + 1);
+      setShowForm(false);
     } catch (err) {
       console.error("Create failed:", err);
     }
@@ -132,6 +126,10 @@ const InvoicePage = () => {
       <button className="btn btn-primary" onClick={handleCreateClick}>
         + Add Invoice
       </button>
+
+      {/* LOADING / ERROR */}
+      {loading && <p>Loading invoices...</p>}
+      {error && <p style={{ color: "red" }}>{error}</p>}
 
       {/* FORM */}
       {showForm && (
