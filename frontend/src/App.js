@@ -8,15 +8,24 @@ import AgentPage from "./pages/AgentPage";
 import CargoPage from "./pages/CargoPage";
 import InvoicePage from "./pages/InvoicePage";
 import SupplierPage from "./pages/SupplierPage";
+
 import "./styles/global.css";
+
 import { ReferenceDataProvider } from "./context/ReferenceDataProvider";
 import { UIStateProvider } from "./context/UIStateContext";
+
+import GlobalLoader from "./components/GlobalLoader";
+import GlobalError from "./components/GlobalError";
 
 function App() {
   return (
     <UIStateProvider>
       <ReferenceDataProvider>
+
         <Router>
+          {/* ✅ NOW INSIDE CONTEXT */}
+            <GlobalLoader />
+            <GlobalError />
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/voyages" element={<VoyagesPage />} />
@@ -27,6 +36,7 @@ function App() {
             <Route path="/suppliers" element={<SupplierPage />} />
           </Routes>
         </Router>
+
       </ReferenceDataProvider>
     </UIStateProvider>
   );

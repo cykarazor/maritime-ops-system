@@ -2,6 +2,7 @@ import React from "react";
 import Table from "./Table";
 
 const VoyageTable = ({ voyages, onEdit, onDelete, onRestore }) => {
+
   const safeVoyages = Array.isArray(voyages)
     ? voyages
     : voyages?.voyages || [];
@@ -11,7 +12,6 @@ const VoyageTable = ({ voyages, onEdit, onDelete, onRestore }) => {
     { header: "Voyage Number", accessor: "voyageNumber" },
     { header: "Load Port", accessor: "loadPort" },
     { header: "Discharge Port", accessor: "dischargePort" },
-
     { header: "Voyage Status", accessor: "status" },
 
     {
@@ -24,14 +24,22 @@ const VoyageTable = ({ voyages, onEdit, onDelete, onRestore }) => {
         ),
     },
 
+    // ✅ FIXED CUSTOMER FIELD
     {
       header: "Customer",
-      render: (v) => v.assignedCustomer?.name || "-",
+      render: (v) =>
+        v.assignedCustomer?.companyName ||
+        v.assignedCustomer?.name ||
+        "-",
     },
 
+    // AGENT (already correct but made safer)
     {
       header: "Agent",
-      render: (v) => v.assignedAgent?.companyName || "-",
+      render: (v) =>
+        v.assignedAgent?.companyName ||
+        v.assignedAgent?.name ||
+        "-",
     },
   ];
 
@@ -44,7 +52,6 @@ const VoyageTable = ({ voyages, onEdit, onDelete, onRestore }) => {
         onDelete,
         onRestore,
 
-        // SESSION 36 RULE SET
         showEdit: (v) => v.isActive === true,
         showDelete: (v) => v.isActive === true,
         showRestore: (v) => v.isActive === false,

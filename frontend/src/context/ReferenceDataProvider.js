@@ -10,19 +10,27 @@ import {
 } from "../utils/api";
 
 export const ReferenceDataProvider = ({ children }) => {
+
+  //console.log("REFERENCE PROVIDER MOUNT");
+
   // =========================
-  // FETCH LAYERS
+  // STABLE FETCH FUNCTIONS
   // =========================
+
   const customersFetch = useFetch(getCustomers);
   const suppliersFetch = useFetch(getSuppliers);
   const agentsFetch = useFetch(getAgents);
 
-  const voyagesFetch = useFetch(() =>
-    getVoyages({ page: 1, limit: 1000 })
+  // IMPORTANT: stable function (prevents loop)
+  const voyagesFetch = useFetch(
+    useMemo(
+      () => () => getVoyages({ page: 1, limit: 1000 }),
+      []
+    )
   );
 
   // =========================
-  // STABLE INITIAL LOAD LOCK
+  // INITIAL LOAD LOCK
   // =========================
   const hasLoadedRef = useRef(false);
 
@@ -32,14 +40,12 @@ export const ReferenceDataProvider = ({ children }) => {
     agentsFetch.loading ||
     voyagesFetch.loading;
 
-  // mark as loaded once everything finishes first time
   useEffect(() => {
     if (!allLoading) {
       hasLoadedRef.current = true;
     }
   }, [allLoading]);
 
-  // only show loading on FIRST load
   const loading = !hasLoadedRef.current && allLoading;
 
   // =========================

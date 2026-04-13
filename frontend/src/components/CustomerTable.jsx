@@ -2,13 +2,17 @@ import React from "react";
 import Table from "./Table";
 
 const CustomerTable = ({ customers, onEdit, onDelete, onRestore }) => {
+
   const safeCustomers = Array.isArray(customers)
     ? customers
     : customers?.customers || [];
 
   const columns = [
-    { header: "Company Name", accessor: "companyName" },
-    { header: "Name", accessor: "name" },
+    {
+      header: "Company Name",
+      render: (c) => c.companyName || c.name || "-",
+    },
+
     { header: "Country", accessor: "country" },
     { header: "Contact Person", accessor: "contactPerson" },
     { header: "Email", accessor: "email" },
@@ -41,7 +45,6 @@ const CustomerTable = ({ customers, onEdit, onDelete, onRestore }) => {
         onDelete,
         onRestore,
 
-        // 🔥 SESSION 36 RULE SYSTEM
         showEdit: (c) => c.isActive === true,
         showDelete: (c) => c.isActive === true,
         showRestore: (c) => c.isActive === false,

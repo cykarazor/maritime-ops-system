@@ -1,17 +1,17 @@
-import React, { createContext, useContext, useState, useCallback } from "react";
+import React, { createContext, useContext, useState, useCallback, useMemo } from "react";
 
 const UIStateContext = createContext();
 
 export const UIStateProvider = ({ children }) => {
 
   // =========================
-  // GLOBAL STATES
+  // STATE
   // =========================
   const [globalLoading, setGlobalLoading] = useState(false);
   const [globalError, setGlobalError] = useState(null);
 
   // =========================
-  // LOADING CONTROL
+  // CORE ACTIONS (NO DEPENDENCIES)
   // =========================
   const startLoading = useCallback(() => {
     setGlobalLoading(true);
@@ -21,9 +21,6 @@ export const UIStateProvider = ({ children }) => {
     setGlobalLoading(false);
   }, []);
 
-  // =========================
-  // ERROR CONTROL
-  // =========================
   const setError = useCallback((message) => {
     setGlobalError(message);
   }, []);
@@ -33,37 +30,48 @@ export const UIStateProvider = ({ children }) => {
   }, []);
 
   // =========================
-  // SAFE WRAPPER FOR API CALLS
+  // SAFE WRAPPER (NO DEP ARRAY CHAINS)
   // =========================
   const runAsync = useCallback(async (asyncFn) => {
     try {
-      startLoading();
-      clearError();
+      setGlobalLoading(true);
+      setGlobalError(null);
 
-      const result = await asyncFn();
+      return await asyncFn();
 
-      return result;
     } catch (err) {
       console.error("Global Error:", err);
-      setError(err?.message || "Something went wrong");
+      setGlobalError(err?.message || "Something went wrong");
       throw err;
+
     } finally {
-      stopLoading();
+      setGlobalLoading(false);
     }
-  }, [startLoading, stopLoading, setError, clearError]);
+  }, []);
+
+  // =========================
+  // MEMOIZED CONTEXT VALUE
+  // =========================
+  const value = useMemo(() => ({
+    globalLoading,
+    globalError,
+    startLoading,
+    stopLoading,
+    setError,
+    clearError,
+    runAsync,
+  }), [
+    globalLoading,
+    globalError,
+    startLoading,
+    stopLoading,
+    setError,
+    clearError,
+    runAsync
+  ]);
 
   return (
-    <UIStateContext.Provider
-      value={{
-        globalLoading,
-        globalError,
-        startLoading,
-        stopLoading,
-        setError,
-        clearError,
-        runAsync,
-      }}
-    >
+    <UIStateContext.Provider value={value}>
       {children}
     </UIStateContext.Provider>
   );
@@ -73,5 +81,11 @@ export const UIStateProvider = ({ children }) => {
 // HOOK
 // =========================
 export const useUIState = () => {
-  return useContext(UIStateContext);
+  const context = useContext(UIStateContext);
+
+  if (!context) {
+    throw new Error("useUIState must be used within UIStateProvider");
+  }
+
+  return context;
 };

@@ -1,20 +1,28 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { useReferenceData } from "../context/ReferenceDataContext";
 import { useFormEngine } from "../hooks/useFormEngine";
 
 const VoyageForm = ({ onSubmit, initialData, onCancel }) => {
 
-  // =========================
-  // GLOBAL REFERENCE DATA
-  // =========================
-  const {
-    customers,
-    agents,
-    loading,
-  } = useReferenceData();
+  const { customers, agents, loading } = useReferenceData();
 
   // =========================
-  // FORM ENGINE
+  // SAFE LIST NORMALIZATION
+  // =========================
+  const customerList = useMemo(() => {
+    return Array.isArray(customers)
+      ? customers
+      : customers?.active || [];
+  }, [customers]);
+
+  const agentList = useMemo(() => {
+    return Array.isArray(agents)
+      ? agents
+      : agents?.active || [];
+  }, [agents]);
+
+  // =========================
+  // FORM ENGINE (FIXED HYDRATION)
   // =========================
   const {
     formData,
@@ -31,27 +39,39 @@ const VoyageForm = ({ onSubmit, initialData, onCancel }) => {
       assignedCustomer: "",
       assignedAgent: "",
     },
+
     initialData,
-    onSubmit,
-    transformSubmit: (data) => ({
+
+    // 🔥 CRITICAL FIX: normalize ALL select fields to STRING
+    mapToForm: (data) => ({
+      vesselName: data.vesselName || "",
+      voyageNumber: data.voyageNumber || "",
+      loadPort: data.loadPort || "",
+      dischargePort: data.dischargePort || "",
+      status: data.status || "Scheduled",
+
+      assignedCustomer: data.assignedCustomer
+        ? String(data.assignedCustomer._id || data.assignedCustomer)
+        : "",
+
+      assignedAgent: data.assignedAgent
+        ? String(data.assignedAgent._id || data.assignedAgent)
+        : "",
+    }),
+
+    mapToPayload: (data) => ({
       ...data,
-      assignedCustomer: String(data.assignedCustomer || ""),
-      assignedAgent: String(data.assignedAgent || ""),
+      assignedCustomer: data.assignedCustomer || null,
+      assignedAgent: data.assignedAgent || null,
     }),
   });
 
-  // =========================
-  // LOADING STATE
-  // =========================
   if (loading) {
     return <p>Loading reference data...</p>;
   }
 
   const isInactive = initialData?.isDeleted;
 
-  // =========================
-  // RENDER
-  // =========================
   return (
     <form onSubmit={handleSubmit} className="form-container">
 
@@ -68,7 +88,7 @@ const VoyageForm = ({ onSubmit, initialData, onCancel }) => {
         <label>Vessel Name</label>
         <input
           name="vesselName"
-          value={formData.vesselName || ""}
+          value={formData.vesselName}
           onChange={handleChange}
           required
           disabled={isInactive}
@@ -80,7 +100,7 @@ const VoyageForm = ({ onSubmit, initialData, onCancel }) => {
         <label>Voyage Number</label>
         <input
           name="voyageNumber"
-          value={formData.voyageNumber || ""}
+          value={formData.voyageNumber}
           onChange={handleChange}
           required
           disabled={isInactive}
@@ -92,7 +112,7 @@ const VoyageForm = ({ onSubmit, initialData, onCancel }) => {
         <label>Load Port</label>
         <input
           name="loadPort"
-          value={formData.loadPort || ""}
+          value={formData.loadPort}
           onChange={handleChange}
           disabled={isInactive}
         />
@@ -103,7 +123,7 @@ const VoyageForm = ({ onSubmit, initialData, onCancel }) => {
         <label>Discharge Port</label>
         <input
           name="dischargePort"
-          value={formData.dischargePort || ""}
+          value={formData.dischargePort}
           onChange={handleChange}
           disabled={isInactive}
         />
@@ -114,7 +134,7 @@ const VoyageForm = ({ onSubmit, initialData, onCancel }) => {
         <label>Status</label>
         <select
           name="status"
-          value={formData.status || "Scheduled"}
+          value={formData.status}
           onChange={handleChange}
           disabled={isInactive}
         >
@@ -137,7 +157,7 @@ const VoyageForm = ({ onSubmit, initialData, onCancel }) => {
           disabled={isInactive}
         >
           <option value="">Select Customer</option>
-          {customers?.active?.map((c) => (
+          {customerList.map((c) => (
             <option key={c._id} value={String(c._id)}>
               {c.companyName || c.name}
             </option>
@@ -156,7 +176,7 @@ const VoyageForm = ({ onSubmit, initialData, onCancel }) => {
           disabled={isInactive}
         >
           <option value="">Select Agent</option>
-          {agents?.active?.map((a) => (
+          {agentList.map((a) => (
             <option key={a._id} value={String(a._id)}>
               {a.companyName}
             </option>
@@ -164,9 +184,8 @@ const VoyageForm = ({ onSubmit, initialData, onCancel }) => {
         </select>
       </div>
 
-      {/* BUTTONS */}
+      {/* ACTIONS */}
       <div className="form-actions">
-
         <button
           type="button"
           className="btn btn-secondary"
@@ -182,7 +201,6 @@ const VoyageForm = ({ onSubmit, initialData, onCancel }) => {
         >
           {isEdit ? "Update Voyage" : "Save Voyage"}
         </button>
-
       </div>
 
     </form>

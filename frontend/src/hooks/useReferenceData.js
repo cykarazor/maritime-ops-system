@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+
 import {
   getCustomers,
   getSuppliers,
@@ -6,34 +7,32 @@ import {
   getAgents,
 } from "../utils/api";
 
-import { useUIState } from "../context/UIStateContext";
-
 export const useReferenceData = () => {
-  const { runAsync } = useUIState();
-
   const [customers, setCustomers] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
   const [voyages, setVoyages] = useState([]);
   const [agents, setAgents] = useState([]);
 
-  // optional local error (ONLY if you still want component-level fallback)
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    let isMounted = true;
+
     const loadReferenceData = async () => {
       try {
-        // =========================
-        // SINGLE CONTROLLED LOAD
-        // =========================
+        setLoading(true);
+        setError(null);
+
         const [customersRes, suppliersRes, voyagesRes, agentsRes] =
-          await runAsync(() =>
-            Promise.all([
-              getCustomers(),
-              getSuppliers(),
-              getVoyages({ page: 1, limit: 1000 }),
-              getAgents(),
-            ])
-          );
+          await Promise.all([
+            getCustomers(),
+            getSuppliers(),
+            getVoyages({ page: 1, limit: 1000 }),
+            getAgents(),
+          ]);
+
+        if (!isMounted) return;
 
         setCustomers(customersRes?.data || []);
         setSuppliers(suppliersRes?.data || []);
@@ -41,19 +40,29 @@ export const useReferenceData = () => {
         setAgents(agentsRes?.data || []);
 
       } catch (err) {
-        // fallback error (optional)
+        if (!isMounted) return;
+
+        console.error("Reference data load failed:", err);
         setError(err?.message || "Failed to load reference data");
+
+      } finally {
+        if (isMounted) setLoading(false);
       }
     };
 
     loadReferenceData();
-  }, [runAsync]);
+
+    return () => {
+      isMounted = false;
+    };
+  }, []); // 🔥 IMPORTANT: EMPTY DEP ARRAY ONLY
 
   return {
     customers,
     suppliers,
     voyages,
     agents,
+    loading,
     error,
   };
 };

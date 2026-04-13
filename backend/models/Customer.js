@@ -4,7 +4,7 @@ const customerSchema = new mongoose.Schema({
   // Display / short name (can be person or alias)
   name: { 
     type: String, 
-    required: true 
+    required: false 
   },
 
   // Company (main entity for AR)

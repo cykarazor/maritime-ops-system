@@ -54,7 +54,7 @@ const getVoyages = async (req, res) => {
     const parsedPage = parseInt(page);
 
     const voyages = await Voyage.find(query)
-      .populate("assignedCustomer", "name")
+      .populate("assignedCustomer", "companyName")
       .populate("assignedAgent", "companyName")
       .skip((parsedPage - 1) * parsedLimit)
       .limit(parsedLimit)

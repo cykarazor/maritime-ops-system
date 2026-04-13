@@ -10,7 +10,6 @@ const CustomerForm = ({ onSubmit, initialData, onCancel }) => {
     isEdit,
   } = useFormEngine({
     initialState: {
-      name: "",
       companyName: "",
       country: "",
       contactPerson: "",
@@ -18,7 +17,9 @@ const CustomerForm = ({ onSubmit, initialData, onCancel }) => {
       phone: "",
       notes: "",
     },
+
     initialData,
+
     onSubmit,
   });
 
@@ -30,37 +31,26 @@ const CustomerForm = ({ onSubmit, initialData, onCancel }) => {
       {/* TITLE */}
       <h3>{isEdit ? "Edit Customer" : "Create Customer"}</h3>
 
-      {/* Inactive warning */}
+      {/* INACTIVE WARNING */}
       {isInactive && (
         <p style={{ color: "red" }}>
           This customer is inactive. Restore it before editing.
         </p>
       )}
 
-      {/* Company Name */}
+      {/* COMPANY NAME (PRIMARY IDENTITY) */}
       <div className="form-group">
         <label>Company Name</label>
         <input
           name="companyName"
           value={formData.companyName || ""}
           onChange={handleChange}
-          disabled={isInactive}
-        />
-      </div>
-
-      {/* Customer Name */}
-      <div className="form-group">
-        <label>Customer Name</label>
-        <input
-          name="name"
-          value={formData.name || ""}
-          onChange={handleChange}
           required
           disabled={isInactive}
         />
       </div>
 
-      {/* Country */}
+      {/* COUNTRY */}
       <div className="form-group">
         <label>Country</label>
         <input
@@ -72,7 +62,7 @@ const CustomerForm = ({ onSubmit, initialData, onCancel }) => {
         />
       </div>
 
-      {/* Contact Person */}
+      {/* CONTACT PERSON */}
       <div className="form-group">
         <label>Contact Person</label>
         <input
@@ -83,7 +73,7 @@ const CustomerForm = ({ onSubmit, initialData, onCancel }) => {
         />
       </div>
 
-      {/* Email */}
+      {/* EMAIL */}
       <div className="form-group">
         <label>Email</label>
         <input
@@ -94,7 +84,7 @@ const CustomerForm = ({ onSubmit, initialData, onCancel }) => {
         />
       </div>
 
-      {/* Phone */}
+      {/* PHONE */}
       <div className="form-group">
         <label>Phone</label>
         <input
@@ -105,7 +95,7 @@ const CustomerForm = ({ onSubmit, initialData, onCancel }) => {
         />
       </div>
 
-      {/* Notes */}
+      {/* NOTES */}
       <div className="form-group">
         <label>Notes</label>
         <textarea
@@ -116,7 +106,7 @@ const CustomerForm = ({ onSubmit, initialData, onCancel }) => {
         />
       </div>
 
-      {/* BUTTONS */}
+      {/* ACTIONS */}
       <div className="form-actions">
 
         <button
