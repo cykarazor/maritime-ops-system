@@ -1,102 +1,50 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
+import { useFormEngine } from "../hooks/useFormEngine";
 
 const SupplierForm = ({ initialData, onSubmit, onCancel }) => {
-  const [formData, setFormData] = useState({
-    companyName: "",
-    country: "",
-    contactPerson: "",
-    email: "",
-    phone: "",
-    address: "",
 
-    currency: "USD",
-    paymentTerms: 30,
-    creditLimit: 0,
-    openingBalance: 0,
+  const {
+    formData,
+    handleChange,
+    handleSubmit,
+    isEdit,
+  } = useFormEngine({
+    initialState: {
+      companyName: "",
+      country: "",
+      contactPerson: "",
+      email: "",
+      phone: "",
+      address: "",
 
-    notes: "",
+      currency: "USD",
+      paymentTerms: 30,
+      creditLimit: 0,
+      openingBalance: 0,
+
+      notes: "",
+    },
+    initialData,
+    onSubmit,
+    transformSubmit: (data) => ({
+      ...data,
+
+      // numeric safety layer
+      paymentTerms: Number(data.paymentTerms || 0),
+      creditLimit: Number(data.creditLimit || 0),
+      openingBalance: Number(data.openingBalance || 0),
+    }),
   });
 
-  // =========================
-  // STANDARD EDIT MODE FLAG
-  // =========================
-  const isEdit = !!initialData;
-
-  // same pattern as VoyageForm
   const isInactive = initialData?.isDeleted;
-
-  // =========================
-  // HYDRATE FORM (EDIT MODE)
-  // =========================
-  useEffect(() => {
-    if (initialData) {
-      setFormData({
-        companyName: initialData.companyName || "",
-        country: initialData.country || "",
-        contactPerson: initialData.contactPerson || "",
-        email: initialData.email || "",
-        phone: initialData.phone || "",
-        address: initialData.address || "",
-
-        currency: initialData.currency || "USD",
-        paymentTerms: initialData.paymentTerms || 30,
-        creditLimit: initialData.creditLimit || 0,
-        openingBalance: initialData.openingBalance || 0,
-
-        notes: initialData.notes || "",
-      });
-    }
-  }, [initialData]);
-
-  // =========================
-  // HANDLE CHANGE
-  // =========================
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  // =========================
-  // SUBMIT (STANDARD RULE)
-  // =========================
-  const handleSubmit = (e) => {
-    e.preventDefault();
-
-    onSubmit({
-      ...formData,
-      paymentTerms: Number(formData.paymentTerms),
-      creditLimit: Number(formData.creditLimit),
-      openingBalance: Number(formData.openingBalance),
-    });
-
-    // reset ONLY in create mode (standard rule)
-    if (!isEdit) {
-      setFormData({
-        companyName: "",
-        country: "",
-        contactPerson: "",
-        email: "",
-        phone: "",
-        address: "",
-        currency: "USD",
-        paymentTerms: 30,
-        creditLimit: 0,
-        openingBalance: 0,
-        notes: "",
-      });
-    }
-  };
 
   return (
     <form className="form-container" onSubmit={handleSubmit}>
 
-      {/* STANDARD TITLE */}
+      {/* TITLE */}
       <h3>{isEdit ? "Edit Supplier" : "Create Supplier"}</h3>
 
+      {/* INACTIVE STATE */}
       {isInactive && (
         <p style={{ color: "red" }}>
           This supplier is inactive. Restore it before editing.
@@ -108,7 +56,7 @@ const SupplierForm = ({ initialData, onSubmit, onCancel }) => {
         <label>Company Name</label>
         <input
           name="companyName"
-          value={formData.companyName}
+          value={formData.companyName || ""}
           onChange={handleChange}
           required
           disabled={isInactive}
@@ -120,7 +68,7 @@ const SupplierForm = ({ initialData, onSubmit, onCancel }) => {
         <label>Country</label>
         <input
           name="country"
-          value={formData.country}
+          value={formData.country || ""}
           onChange={handleChange}
           disabled={isInactive}
         />
@@ -131,7 +79,7 @@ const SupplierForm = ({ initialData, onSubmit, onCancel }) => {
         <label>Contact Person</label>
         <input
           name="contactPerson"
-          value={formData.contactPerson}
+          value={formData.contactPerson || ""}
           onChange={handleChange}
           disabled={isInactive}
         />
@@ -142,7 +90,7 @@ const SupplierForm = ({ initialData, onSubmit, onCancel }) => {
         <label>Email</label>
         <input
           name="email"
-          value={formData.email}
+          value={formData.email || ""}
           onChange={handleChange}
           disabled={isInactive}
         />
@@ -153,7 +101,7 @@ const SupplierForm = ({ initialData, onSubmit, onCancel }) => {
         <label>Phone</label>
         <input
           name="phone"
-          value={formData.phone}
+          value={formData.phone || ""}
           onChange={handleChange}
           disabled={isInactive}
         />
@@ -164,7 +112,7 @@ const SupplierForm = ({ initialData, onSubmit, onCancel }) => {
         <label>Address</label>
         <textarea
           name="address"
-          value={formData.address}
+          value={formData.address || ""}
           onChange={handleChange}
           disabled={isInactive}
         />
@@ -175,7 +123,7 @@ const SupplierForm = ({ initialData, onSubmit, onCancel }) => {
         <label>Currency</label>
         <select
           name="currency"
-          value={formData.currency}
+          value={formData.currency || "USD"}
           onChange={handleChange}
           disabled={isInactive}
         >
@@ -189,9 +137,9 @@ const SupplierForm = ({ initialData, onSubmit, onCancel }) => {
       <div className="form-group">
         <label>Payment Terms (days)</label>
         <input
-          name="paymentTerms"
           type="number"
-          value={formData.paymentTerms}
+          name="paymentTerms"
+          value={formData.paymentTerms || 0}
           onChange={handleChange}
           disabled={isInactive}
         />
@@ -201,9 +149,9 @@ const SupplierForm = ({ initialData, onSubmit, onCancel }) => {
       <div className="form-group">
         <label>Credit Limit</label>
         <input
-          name="creditLimit"
           type="number"
-          value={formData.creditLimit}
+          name="creditLimit"
+          value={formData.creditLimit || 0}
           onChange={handleChange}
           disabled={isInactive}
         />
@@ -213,9 +161,9 @@ const SupplierForm = ({ initialData, onSubmit, onCancel }) => {
       <div className="form-group">
         <label>Opening Balance</label>
         <input
-          name="openingBalance"
           type="number"
-          value={formData.openingBalance}
+          name="openingBalance"
+          value={formData.openingBalance || 0}
           onChange={handleChange}
           disabled={isInactive}
         />
@@ -226,13 +174,13 @@ const SupplierForm = ({ initialData, onSubmit, onCancel }) => {
         <label>Notes</label>
         <textarea
           name="notes"
-          value={formData.notes}
+          value={formData.notes || ""}
           onChange={handleChange}
           disabled={isInactive}
         />
       </div>
 
-      {/* STANDARD BUTTON BLOCK */}
+      {/* BUTTONS */}
       <div className="form-actions">
 
         <button
@@ -252,6 +200,7 @@ const SupplierForm = ({ initialData, onSubmit, onCancel }) => {
         </button>
 
       </div>
+
     </form>
   );
 };

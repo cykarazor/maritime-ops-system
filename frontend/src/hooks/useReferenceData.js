@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-
 import {
   getCustomers,
   getSuppliers,
@@ -7,27 +6,34 @@ import {
   getAgents,
 } from "../utils/api";
 
+import { useUIState } from "../context/UIStateContext";
+
 export const useReferenceData = () => {
+  const { runAsync } = useUIState();
+
   const [customers, setCustomers] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
   const [voyages, setVoyages] = useState([]);
   const [agents, setAgents] = useState([]);
 
-  const [loading, setLoading] = useState(true);
+  // optional local error (ONLY if you still want component-level fallback)
   const [error, setError] = useState(null);
 
   useEffect(() => {
     const loadReferenceData = async () => {
       try {
-        setLoading(true);
-
+        // =========================
+        // SINGLE CONTROLLED LOAD
+        // =========================
         const [customersRes, suppliersRes, voyagesRes, agentsRes] =
-          await Promise.all([
-            getCustomers(),
-            getSuppliers(),
-            getVoyages({ page: 1, limit: 1000 }),
-            getAgents(),
-          ]);
+          await runAsync(() =>
+            Promise.all([
+              getCustomers(),
+              getSuppliers(),
+              getVoyages({ page: 1, limit: 1000 }),
+              getAgents(),
+            ])
+          );
 
         setCustomers(customersRes?.data || []);
         setSuppliers(suppliersRes?.data || []);
@@ -35,22 +41,19 @@ export const useReferenceData = () => {
         setAgents(agentsRes?.data || []);
 
       } catch (err) {
-        console.error("Reference data load failed:", err);
-        setError(err.message || "Failed to load reference data");
-      } finally {
-        setLoading(false);
+        // fallback error (optional)
+        setError(err?.message || "Failed to load reference data");
       }
     };
 
     loadReferenceData();
-  }, []);
+  }, [runAsync]);
 
   return {
     customers,
     suppliers,
     voyages,
     agents,
-    loading,
     error,
   };
 };

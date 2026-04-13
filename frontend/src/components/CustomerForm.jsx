@@ -1,68 +1,28 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
+import { useFormEngine } from "../hooks/useFormEngine";
 
 const CustomerForm = ({ onSubmit, initialData, onCancel }) => {
-  const [formData, setFormData] = useState({
-    name: "",
-    companyName: "",
-    country: "",
-    contactPerson: "",
-    email: "",
-    phone: "",
-    notes: "",
+
+  const {
+    formData,
+    handleChange,
+    handleSubmit,
+    isEdit,
+  } = useFormEngine({
+    initialState: {
+      name: "",
+      companyName: "",
+      country: "",
+      contactPerson: "",
+      email: "",
+      phone: "",
+      notes: "",
+    },
+    initialData,
+    onSubmit,
   });
 
-  // Detect edit mode
-  const isEdit = !!initialData;
   const isInactive = initialData?.isDeleted;
-
-  // =========================
-  // LOAD EDIT DATA
-  // =========================
-  useEffect(() => {
-    if (initialData) {
-      setFormData({
-        name: initialData.name || "",
-        companyName: initialData.companyName || "",
-        country: initialData.country || "",
-        contactPerson: initialData.contactPerson || "",
-        email: initialData.email || "",
-        phone: initialData.phone || "",
-        notes: initialData.notes || "",
-      });
-    }
-  }, [initialData]);
-
-  // =========================
-  // HANDLE CHANGE
-  // =========================
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-  };
-
-  // =========================
-  // SUBMIT
-  // =========================
-  const handleSubmit = (e) => {
-    e.preventDefault();
-
-    onSubmit(formData);
-
-    // reset ONLY on create mode
-    if (!isEdit) {
-      setFormData({
-        name: "",
-        companyName: "",
-        country: "",
-        contactPerson: "",
-        email: "",
-        phone: "",
-        notes: "",
-      });
-    }
-  };
 
   return (
     <form onSubmit={handleSubmit} className="form-container">
@@ -70,7 +30,7 @@ const CustomerForm = ({ onSubmit, initialData, onCancel }) => {
       {/* TITLE */}
       <h3>{isEdit ? "Edit Customer" : "Create Customer"}</h3>
 
-      {/* Inactive warning (STANDARD) */}
+      {/* Inactive warning */}
       {isInactive && (
         <p style={{ color: "red" }}>
           This customer is inactive. Restore it before editing.
@@ -82,7 +42,7 @@ const CustomerForm = ({ onSubmit, initialData, onCancel }) => {
         <label>Company Name</label>
         <input
           name="companyName"
-          value={formData.companyName}
+          value={formData.companyName || ""}
           onChange={handleChange}
           disabled={isInactive}
         />
@@ -93,7 +53,7 @@ const CustomerForm = ({ onSubmit, initialData, onCancel }) => {
         <label>Customer Name</label>
         <input
           name="name"
-          value={formData.name}
+          value={formData.name || ""}
           onChange={handleChange}
           required
           disabled={isInactive}
@@ -105,7 +65,7 @@ const CustomerForm = ({ onSubmit, initialData, onCancel }) => {
         <label>Country</label>
         <input
           name="country"
-          value={formData.country}
+          value={formData.country || ""}
           onChange={handleChange}
           required
           disabled={isInactive}
@@ -117,7 +77,7 @@ const CustomerForm = ({ onSubmit, initialData, onCancel }) => {
         <label>Contact Person</label>
         <input
           name="contactPerson"
-          value={formData.contactPerson}
+          value={formData.contactPerson || ""}
           onChange={handleChange}
           disabled={isInactive}
         />
@@ -128,7 +88,7 @@ const CustomerForm = ({ onSubmit, initialData, onCancel }) => {
         <label>Email</label>
         <input
           name="email"
-          value={formData.email}
+          value={formData.email || ""}
           onChange={handleChange}
           disabled={isInactive}
         />
@@ -139,7 +99,7 @@ const CustomerForm = ({ onSubmit, initialData, onCancel }) => {
         <label>Phone</label>
         <input
           name="phone"
-          value={formData.phone}
+          value={formData.phone || ""}
           onChange={handleChange}
           disabled={isInactive}
         />
@@ -150,7 +110,7 @@ const CustomerForm = ({ onSubmit, initialData, onCancel }) => {
         <label>Notes</label>
         <textarea
           name="notes"
-          value={formData.notes}
+          value={formData.notes || ""}
           onChange={handleChange}
           disabled={isInactive}
         />

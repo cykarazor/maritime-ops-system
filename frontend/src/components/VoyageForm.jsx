@@ -1,97 +1,60 @@
-import React, { useState, useEffect } from "react";
-import { getCustomers, getAgents } from "../utils/api";
+import React from "react";
+import { useReferenceData } from "../context/ReferenceDataContext";
+import { useFormEngine } from "../hooks/useFormEngine";
 
 const VoyageForm = ({ onSubmit, initialData, onCancel }) => {
 
-  const [formData, setFormData] = useState({
-    vesselName: "",
-    voyageNumber: "",
-    loadPort: "",
-    dischargePort: "",
-    status: "Scheduled",
-    assignedCustomer: "",
-    assignedAgent: "",
+  // =========================
+  // GLOBAL REFERENCE DATA
+  // =========================
+  const {
+    customers,
+    agents,
+    loading,
+  } = useReferenceData();
+
+  // =========================
+  // FORM ENGINE
+  // =========================
+  const {
+    formData,
+    handleChange,
+    handleSubmit,
+    isEdit,
+  } = useFormEngine({
+    initialState: {
+      vesselName: "",
+      voyageNumber: "",
+      loadPort: "",
+      dischargePort: "",
+      status: "Scheduled",
+      assignedCustomer: "",
+      assignedAgent: "",
+    },
+    initialData,
+    onSubmit,
+    transformSubmit: (data) => ({
+      ...data,
+      assignedCustomer: String(data.assignedCustomer || ""),
+      assignedAgent: String(data.assignedAgent || ""),
+    }),
   });
 
-  const [customers, setCustomers] = useState([]);
-  const [agents, setAgents] = useState([]);
-
-  // Detect Edit Mode
-  const isEdit = !!initialData;
-
   // =========================
-  // LOAD DROPDOWNS
+  // LOADING STATE
   // =========================
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const custRes = await getCustomers();
-        const agentRes = await getAgents();
-
-        setCustomers(custRes.data || []);
-        setAgents(agentRes.data || []);
-      } catch (err) {
-        console.error("Error fetching dropdown data:", err);
-      }
-    };
-
-    fetchData();
-  }, []);
-
-  // =========================
-  // LOAD EDIT DATA
-  // =========================
-  useEffect(() => {
-    if (initialData) {
-      setFormData({
-        vesselName: initialData.vesselName || "",
-        voyageNumber: initialData.voyageNumber || "",
-        loadPort: initialData.loadPort || "",
-        dischargePort: initialData.dischargePort || "",
-        status: initialData.status || "Scheduled",
-        assignedCustomer: initialData.assignedCustomer?._id || "",
-        assignedAgent: initialData.assignedAgent?._id || "",
-      });
-    }
-  }, [initialData]);
-
-  // =========================
-  // HANDLE CHANGE
-  // =========================
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-  };
-
-  // =========================
-  // SUBMIT
-  // =========================
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onSubmit(formData);
-
-    // reset ONLY on create mode (Agent-style simplicity)
-    if (!isEdit) {
-      setFormData({
-        vesselName: "",
-        voyageNumber: "",
-        loadPort: "",
-        dischargePort: "",
-        status: "Scheduled",
-        assignedCustomer: "",
-        assignedAgent: "",
-      });
-    }
-  };
+  if (loading) {
+    return <p>Loading reference data...</p>;
+  }
 
   const isInactive = initialData?.isDeleted;
 
+  // =========================
+  // RENDER
+  // =========================
   return (
     <form onSubmit={handleSubmit} className="form-container">
 
-      {/* TITLE */}
       <h3>{isEdit ? "Edit Voyage" : "Create Voyage"}</h3>
 
       {isInactive && (
@@ -105,7 +68,7 @@ const VoyageForm = ({ onSubmit, initialData, onCancel }) => {
         <label>Vessel Name</label>
         <input
           name="vesselName"
-          value={formData.vesselName}
+          value={formData.vesselName || ""}
           onChange={handleChange}
           required
           disabled={isInactive}
@@ -117,7 +80,7 @@ const VoyageForm = ({ onSubmit, initialData, onCancel }) => {
         <label>Voyage Number</label>
         <input
           name="voyageNumber"
-          value={formData.voyageNumber}
+          value={formData.voyageNumber || ""}
           onChange={handleChange}
           required
           disabled={isInactive}
@@ -129,7 +92,7 @@ const VoyageForm = ({ onSubmit, initialData, onCancel }) => {
         <label>Load Port</label>
         <input
           name="loadPort"
-          value={formData.loadPort}
+          value={formData.loadPort || ""}
           onChange={handleChange}
           disabled={isInactive}
         />
@@ -140,7 +103,7 @@ const VoyageForm = ({ onSubmit, initialData, onCancel }) => {
         <label>Discharge Port</label>
         <input
           name="dischargePort"
-          value={formData.dischargePort}
+          value={formData.dischargePort || ""}
           onChange={handleChange}
           disabled={isInactive}
         />
@@ -151,7 +114,7 @@ const VoyageForm = ({ onSubmit, initialData, onCancel }) => {
         <label>Status</label>
         <select
           name="status"
-          value={formData.status}
+          value={formData.status || "Scheduled"}
           onChange={handleChange}
           disabled={isInactive}
         >
@@ -168,15 +131,15 @@ const VoyageForm = ({ onSubmit, initialData, onCancel }) => {
         <label>Customer</label>
         <select
           name="assignedCustomer"
-          value={formData.assignedCustomer}
+          value={String(formData.assignedCustomer || "")}
           onChange={handleChange}
           required
           disabled={isInactive}
         >
           <option value="">Select Customer</option>
-          {customers.map((customer) => (
-            <option key={customer._id} value={customer._id}>
-              {customer.name}
+          {customers?.active?.map((c) => (
+            <option key={c._id} value={String(c._id)}>
+              {c.companyName || c.name}
             </option>
           ))}
         </select>
@@ -187,21 +150,21 @@ const VoyageForm = ({ onSubmit, initialData, onCancel }) => {
         <label>Agent</label>
         <select
           name="assignedAgent"
-          value={formData.assignedAgent}
+          value={String(formData.assignedAgent || "")}
           onChange={handleChange}
           required
           disabled={isInactive}
         >
           <option value="">Select Agent</option>
-          {agents.map((agent) => (
-            <option key={agent._id} value={agent._id}>
-              {agent.companyName}
+          {agents?.active?.map((a) => (
+            <option key={a._id} value={String(a._id)}>
+              {a.companyName}
             </option>
           ))}
         </select>
       </div>
 
-      {/* BUTTONS (AGENT STYLE STANDARD) */}
+      {/* BUTTONS */}
       <div className="form-actions">
 
         <button

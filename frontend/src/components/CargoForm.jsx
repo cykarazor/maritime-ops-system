@@ -1,124 +1,82 @@
-import React, { useState, useEffect } from "react";
+import React, { useMemo } from "react";
+import { useReferenceData } from "../context/ReferenceDataContext";
+import { useFormEngine } from "../hooks/useFormEngine";
 
 const CargoForm = ({
   initialData,
   onSubmit,
   onCancel,
-  voyages = [],
-  customers = [],
 }) => {
-  const [formData, setFormData] = useState({
-    voyage: "",
-    customer: "",
-    cargoType: "Cement",
-    quantity: 0,
-    unit: "MT",
-    rate: 0,
-    totalRevenue: 0,
-    notes: "",
+
+  const {
+    voyages: refVoyages,
+    customers: refCustomers,
+    loading,
+  } = useReferenceData();
+
+  const {
+    formData,
+    handleChange,
+    handleSubmit,
+    isEdit,
+  } = useFormEngine({
+    initialState: {
+      voyage: "",
+      customer: "",
+      cargoType: "Cement",
+      quantity: 0,
+      unit: "MT",
+      rate: 0,
+      totalRevenue: 0,
+      notes: "",
+    },
+    initialData,
+    onSubmit,
+    transformSubmit: (data) => ({
+      ...data,
+      quantity: Number(data.quantity || 0),
+      rate: Number(data.rate || 0),
+      totalRevenue:
+        Number(data.quantity || 0) *
+        Number(data.rate || 0),
+    }),
   });
 
-  // Detect edit mode
-  const isEdit = !!initialData;
-  const isInactive = initialData?.isDeleted;
+  // =========================
+  // SAFE COMPUTED VALUE
+  // =========================
+  const computedTotal = useMemo(() => {
+    return Number(formData.quantity || 0) *
+           Number(formData.rate || 0);
+  }, [formData.quantity, formData.rate]);
 
   // =========================
-  // LOAD EDIT DATA
+  // LOADING STATE
   // =========================
-  useEffect(() => {
-    if (initialData) {
-      setFormData({
-        voyage: initialData.voyage?._id || "",
-        customer: initialData.customer?._id || "",
-        cargoType: initialData.cargoType || "Cement",
-        quantity: initialData.quantity || 0,
-        unit: initialData.unit || "MT",
-        rate: initialData.rate || 0,
-        totalRevenue: initialData.totalRevenue || 0,
-        notes: initialData.notes || "",
-      });
-    }
-  }, [initialData]);
-
-  // =========================
-  // HANDLE CHANGE
-  // =========================
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-
-    let updated = {
-      ...formData,
-      [name]: value,
-    };
-
-    // auto calculate revenue
-    if (name === "quantity" || name === "rate") {
-      const quantity =
-        name === "quantity" ? Number(value) : Number(updated.quantity);
-      const rate =
-        name === "rate" ? Number(value) : Number(updated.rate);
-
-      updated.totalRevenue = quantity * rate;
-    }
-
-    setFormData(updated);
-  };
-
-  // =========================
-  // SUBMIT
-  // =========================
-  const handleSubmit = (e) => {
-    e.preventDefault();
-
-    onSubmit({
-      ...formData,
-      quantity: Number(formData.quantity),
-      rate: Number(formData.rate),
-    });
-
-    // reset only on create
-    if (!isEdit) {
-      setFormData({
-        voyage: "",
-        customer: "",
-        cargoType: "Cement",
-        quantity: 0,
-        unit: "MT",
-        rate: 0,
-        totalRevenue: 0,
-        notes: "",
-      });
-    }
-  };
-
-  // safety guards
-  const safeVoyages = Array.isArray(voyages) ? voyages : [];
-  const safeCustomers = Array.isArray(customers) ? customers : [];
+  if (loading) {
+    return <p>Loading reference data...</p>;
+  }
 
   return (
     <form onSubmit={handleSubmit} className="form-container">
 
       <h3>{isEdit ? "Edit Cargo" : "Create Cargo"}</h3>
 
-      {isInactive && (
-        <p style={{ color: "red" }}>
-          This cargo is inactive. Restore it before editing.
-        </p>
-      )}
-
       {/* Voyage */}
       <div className="form-group">
         <label>Voyage</label>
         <select
           name="voyage"
-          value={formData.voyage}
+          value={String(formData.voyage || "")}
           onChange={handleChange}
           required
-          disabled={isInactive}
         >
           <option value="">Select Voyage</option>
-          {safeVoyages.map((v) => (
-            <option key={v._id} value={v._id}>
+          {refVoyages.active.map((v) => (
+            <option
+              key={v._id}
+              value={String(v._id)}
+            >
               {v.vesselName} - {v.voyageNumber}
             </option>
           ))}
@@ -130,14 +88,16 @@ const CargoForm = ({
         <label>Customer</label>
         <select
           name="customer"
-          value={formData.customer}
+          value={String(formData.customer || "")}
           onChange={handleChange}
           required
-          disabled={isInactive}
         >
           <option value="">Select Customer</option>
-          {safeCustomers.map((c) => (
-            <option key={c._id} value={c._id}>
+          {refCustomers.active.map((c) => (
+            <option
+              key={c._id}
+              value={String(c._id)}
+            >
               {c.companyName || c.name}
             </option>
           ))}
@@ -149,9 +109,8 @@ const CargoForm = ({
         <label>Cargo Type</label>
         <input
           name="cargoType"
-          value={formData.cargoType}
+          value={formData.cargoType || ""}
           onChange={handleChange}
-          disabled={isInactive}
         />
       </div>
 
@@ -161,9 +120,8 @@ const CargoForm = ({
         <input
           type="number"
           name="quantity"
-          value={formData.quantity}
+          value={formData.quantity || 0}
           onChange={handleChange}
-          disabled={isInactive}
         />
       </div>
 
@@ -172,9 +130,8 @@ const CargoForm = ({
         <label>Unit</label>
         <select
           name="unit"
-          value={formData.unit}
+          value={formData.unit || "MT"}
           onChange={handleChange}
-          disabled={isInactive}
         >
           <option value="MT">MT</option>
           <option value="KG">KG</option>
@@ -187,9 +144,8 @@ const CargoForm = ({
         <input
           type="number"
           name="rate"
-          value={formData.rate}
+          value={formData.rate || 0}
           onChange={handleChange}
-          disabled={isInactive}
         />
       </div>
 
@@ -198,7 +154,7 @@ const CargoForm = ({
         <label>Total Revenue</label>
         <input
           type="number"
-          value={formData.totalRevenue}
+          value={computedTotal}
           readOnly
         />
       </div>
@@ -208,31 +164,28 @@ const CargoForm = ({
         <label>Notes</label>
         <textarea
           name="notes"
-          value={formData.notes}
+          value={formData.notes || ""}
           onChange={handleChange}
-          disabled={isInactive}
         />
       </div>
 
-      {/* BUTTONS */}
+      {/* ACTIONS */}
       <div className="form-actions">
-        <button
-          type="button"
-          className="btn btn-secondary"
-          onClick={onCancel}
-        >
-          Cancel
-        </button>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={onCancel}
+          >
+            Cancel
+          </button>
 
-        <button
-          type="submit"
-          className="btn btn-primary"
-          disabled={isInactive}
-        >
-          {isEdit ? "Update Cargo" : "Save Cargo"}
-        </button>
-      </div>
-
+          <button
+            type="submit"
+            className="btn btn-primary"
+          >
+            {isEdit ? "Update Cargo" : "Save Cargo"}
+          </button>
+        </div>
     </form>
   );
 };
