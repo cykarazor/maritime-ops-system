@@ -42,6 +42,8 @@ const VoyageForm = ({ onSubmit, initialData, onCancel }) => {
 
     initialData,
 
+    onSubmit,
+
     // 🔥 CRITICAL FIX: normalize ALL select fields to STRING
     mapToForm: (data) => ({
       vesselName: data.vesselName || "",

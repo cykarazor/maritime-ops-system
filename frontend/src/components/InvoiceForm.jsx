@@ -1,231 +1,210 @@
 import React from "react";
-import { useReferenceData } from "../context/ReferenceDataContext";
 import { useFormEngine } from "../hooks/useFormEngine";
+import {invoiceRules } from "../validators/invoiceRules";
 
-const InvoiceForm = ({ initialData, onSubmit, onCancel }) => {
+const Field = ({ label, children }) => (
+  <div className="form-group">
+    <label>
+      {label}
+    </label>
+    {children}
+  </div>
+);
 
-  // =========================
-  // GLOBAL REFERENCE DATA
-  // =========================
-  const {
-    voyages,
-    customers,
-    suppliers,
-    loading,
-  } = useReferenceData();
+const ErrorText = ({ error }) => {
+  if (!error) return null;
 
-  // =========================
-  // FORM ENGINE
-  // =========================
-  const {
-    formData,
-    handleChange,
-    handleSubmit,
-    isEdit,
-  } = useFormEngine({
+  return (
+    <div
+      className="form-error"
+    >
+      {error}
+    </div>
+  );
+};
+
+const InvoiceForm = ({
+  initialData,
+  voyages = [],
+  customers = [],
+  suppliers = [],
+  onSubmit,
+  onClose, // ✅ IMPORTANT
+}) => {
+  const { formData, handleChange, handleSubmit, isEdit, errors, } = useFormEngine({
     initialState: {
       invoiceNumber: "",
       type: "AR",
       voyage: "",
       customer: "",
       supplier: "",
-      invoiceDate: "",
-      dueDate: "",
-      amount: 0,
-      amountPaid: 0,
+      invoiceDate:"",
+      dueDate:"",
+      amount: "",
+      amountPaid: "",
       paymentStatus: "Unpaid",
       notes: "",
     },
-    initialData,
-    onSubmit,
-    transformSubmit: (data) => ({
-      ...data,
 
-      // numeric safety
+    initialData,
+
+    rules: invoiceRules,
+
+    onSubmit: onSubmit, // ✅ PASSING ON SUBMIT FROM PARENT
+
+    mapToForm: (data) => ({
+      ...data,
+      invoiceDate: data.invoiceDate ? data.invoiceDate.split("T")[0] : "",
+      dueDate: data.dueDate ? data.dueDate.split("T")[0] : "",
+    }),
+
+    mapToPayload: (data) => ({
+      ...data,
       amount: Number(data.amount || 0),
       amountPaid: Number(data.amountPaid || 0),
-
-      // conditional ownership logic
-      customer:
-        data.type === "AR"
-          ? String(data.customer || "")
-          : null,
-
-      supplier:
-        data.type === "AP"
-          ? String(data.supplier || "")
-          : null,
+      voyage: data.voyage ? String(data.voyage) : null,
+      customer: data.type === "AR" ? String(data.customer || "") : null,
+      supplier: data.type === "AP" ? String(data.supplier || "") : null,
+      invoiceDate: data.invoiceDate || null,
+      dueDate: data.dueDate || null,
     }),
   });
 
-  // =========================
-  // LOADING STATE
-  // =========================
-  if (loading) {
-    return <p>Loading reference data...</p>;
-  }
-
-  // =========================
-  // RENDER
-  // =========================
   return (
     <form onSubmit={handleSubmit} className="form-container">
 
-      <h3>{isEdit ? "Edit Invoice" : "Create Invoice"}</h3>
-
-      {/* Invoice Number */}
-      <div className="form-group">
-        <label>Invoice Number</label>
+      <Field label="Invoice Number">
         <input
           name="invoiceNumber"
           value={formData.invoiceNumber || ""}
           onChange={handleChange}
-          required
         />
-      </div>
+        <ErrorText error={errors.invoiceNumber} />
+      </Field>
 
-      {/* Type */}
-      <div className="form-group">
-        <label>Type</label>
-        <select
-          name="type"
-          value={formData.type || "AR"}
-          onChange={handleChange}
-        >
-          <option value="AR">AR (Customer)</option>
-          <option value="AP">AP (Supplier)</option>
+      <Field label="Type">
+        <select name="type" value={formData.type} onChange={handleChange}>
+          <option value="AR">AR</option>
+          <option value="AP">AP</option>
         </select>
-      </div>
+      </Field>
 
-      {/* Voyage */}
-      <div className="form-group">
-        <label>Voyage</label>
-        <select
-          name="voyage"
-          value={String(formData.voyage || "")}
-          onChange={handleChange}
-        >
+      <Field label="Voyage">
+        <select name="voyage" value={formData.voyage || ""} onChange={handleChange}>
           <option value="">Select Voyage</option>
-          {voyages?.active?.map((v) => (
-            <option key={v._id} value={String(v._id)}>
+          {voyages.map((v) => (
+            <option key={v._id} value={v._id}>
               {v.vesselName} - {v.voyageNumber}
             </option>
           ))}
         </select>
-      </div>
+        <ErrorText error={errors.voyage} />
+      </Field>
 
-      {/* CUSTOMER (AR ONLY) */}
       {formData.type === "AR" && (
-        <div className="form-group">
-          <label>Customer</label>
+        <Field label="Customer">
           <select
             name="customer"
-            value={String(formData.customer || "")}
+            value={formData.customer || ""}
             onChange={handleChange}
           >
             <option value="">Select Customer</option>
-            {customers?.active?.map((c) => (
-              <option key={c._id} value={String(c._id)}>
-                {c.companyName || c.name}
+            {customers.map((c) => (
+              <option key={c._id} value={c._id}>
+                {c.companyName}
               </option>
             ))}
+            
           </select>
-        </div>
+          <ErrorText error={errors.customer} />
+        </Field>
       )}
 
-      {/* SUPPLIER (AP ONLY) */}
       {formData.type === "AP" && (
-        <div className="form-group">
-          <label>Supplier</label>
+        <Field label="Supplier">
           <select
             name="supplier"
-            value={String(formData.supplier || "")}
+            value={formData.supplier || ""}
             onChange={handleChange}
           >
             <option value="">Select Supplier</option>
-            {suppliers?.active?.map((s) => (
-              <option key={s._id} value={String(s._id)}>
+            {suppliers.map((s) => (
+              <option key={s._id} value={s._id}>
                 {s.companyName}
               </option>
             ))}
           </select>
-        </div>
+          <ErrorText error={errors.supplier} />
+        </Field>
       )}
 
-      {/* Dates */}
-      <div className="form-group">
-        <label>Invoice Date</label>
+      <Field label="Invoice Date">
         <input
           type="date"
           name="invoiceDate"
-          value={formData.invoiceDate?.slice(0, 10) || ""}
+          value={formData.invoiceDate || ""}
           onChange={handleChange}
         />
-      </div>
+        <ErrorText error={errors.invoiceDate} />
+      </Field>
 
-      <div className="form-group">
-        <label>Due Date</label>
+      <Field label="Due Date">
         <input
           type="date"
           name="dueDate"
-          value={formData.dueDate?.slice(0, 10) || ""}
+          value={formData.dueDate || ""}
           onChange={handleChange}
         />
-      </div>
+        <ErrorText error={errors.dueDate} />
+      </Field>
 
-      {/* Amount */}
-      <div className="form-group">
-        <label>Amount</label>
+      <Field label="Amount">
         <input
           type="number"
           name="amount"
-          value={formData.amount || 0}
+          value={formData.amount || ""}
           onChange={handleChange}
         />
-      </div>
+        <ErrorText error={errors.amount} />
+      </Field>
 
-      {/* Paid */}
-      <div className="form-group">
-        <label>Amount Paid</label>
+      <Field label="Amount Paid">
         <input
           type="number"
           name="amountPaid"
-          value={formData.amountPaid || 0}
+          value={formData.amountPaid || ""}
           onChange={handleChange}
         />
-      </div>
+      </Field>
 
-      {/* Status */}
-      <div className="form-group">
-        <label>Payment Status</label>
+      <Field label="Status">
         <select
           name="paymentStatus"
-          value={formData.paymentStatus || "Unpaid"}
+          value={formData.paymentStatus}
           onChange={handleChange}
         >
           <option value="Unpaid">Unpaid</option>
           <option value="Partial">Partial</option>
           <option value="Paid">Paid</option>
         </select>
-      </div>
+      </Field>
 
-      {/* Notes */}
-      <div className="form-group">
-        <label>Notes</label>
+      <Field label="Notes">
         <textarea
           name="notes"
           value={formData.notes || ""}
           onChange={handleChange}
         />
-      </div>
+      </Field>
 
-      {/* BUTTONS */}
-      <div className="form-actions">
-
+      {/* ✅ ACTION BUTTONS INSIDE FORM */}
+      <div
+        className="form-actions"
+      >
         <button
           type="button"
           className="btn btn-secondary"
-          onClick={onCancel}
+          onClick={onClose}
         >
           Cancel
         </button>
@@ -233,7 +212,6 @@ const InvoiceForm = ({ initialData, onSubmit, onCancel }) => {
         <button type="submit" className="btn btn-primary">
           {isEdit ? "Update Invoice" : "Save Invoice"}
         </button>
-
       </div>
 
     </form>

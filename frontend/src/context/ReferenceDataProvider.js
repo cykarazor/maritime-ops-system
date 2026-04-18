@@ -11,26 +11,19 @@ import {
 
 export const ReferenceDataProvider = ({ children }) => {
 
-  //console.log("REFERENCE PROVIDER MOUNT");
-
   // =========================
-  // STABLE FETCH FUNCTIONS
+  // FETCHERS (STABLE)
   // =========================
-
   const customersFetch = useFetch(getCustomers);
   const suppliersFetch = useFetch(getSuppliers);
   const agentsFetch = useFetch(getAgents);
 
-  // IMPORTANT: stable function (prevents loop)
   const voyagesFetch = useFetch(
-    useMemo(
-      () => () => getVoyages({ page: 1, limit: 1000 }),
-      []
-    )
+    useMemo(() => () => getVoyages({ page: 1, limit: 1000 }), [])
   );
 
   // =========================
-  // INITIAL LOAD LOCK
+  // LOAD CONTROL
   // =========================
   const hasLoadedRef = useRef(false);
 
@@ -41,15 +34,13 @@ export const ReferenceDataProvider = ({ children }) => {
     voyagesFetch.loading;
 
   useEffect(() => {
-    if (!allLoading) {
-      hasLoadedRef.current = true;
-    }
+    if (!allLoading) hasLoadedRef.current = true;
   }, [allLoading]);
 
   const loading = !hasLoadedRef.current && allLoading;
 
   // =========================
-  // ERROR HANDLING
+  // ERROR MERGE
   // =========================
   const error =
     customersFetch.error ||
@@ -58,8 +49,10 @@ export const ReferenceDataProvider = ({ children }) => {
     voyagesFetch.error;
 
   // =========================
-  // NORMALIZED DATA
+  // NORMALISATION (🔥 IMPORTANT FIX)
+  // ALWAYS RETURN SAME SHAPE
   // =========================
+
   const customers = useMemo(() => {
     const data = customersFetch.data?.data || [];
     return {
@@ -93,7 +86,7 @@ export const ReferenceDataProvider = ({ children }) => {
   }, [voyagesFetch.data]);
 
   // =========================
-  // REFRESH ALL DATA
+  // REFRESH
   // =========================
   const refresh = () => {
     customersFetch.refetch();

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { validate as coreValidate } from "../validators/coreValidator";
 
 export const useFormEngine = ({
   initialState,
@@ -7,8 +8,9 @@ export const useFormEngine = ({
   mapToPayload,
   onSubmit,
   validate,
-  asyncValidate, // 🔥 NEW (optional)
-  storageKey,    // 🔥 NEW (for auto-save)
+  rules,
+  asyncValidate,
+  storageKey,
   autoSave = true,
 }) => {
   const [formData, setFormData] = useState(initialState);
@@ -23,7 +25,14 @@ export const useFormEngine = ({
   const hydratedRef = useRef(false);
 
   // =========================
-  // LOAD FROM STORAGE (RESTORE DRAFT)
+  // RESET HYDRATION WHEN RECORD CHANGES
+  // =========================
+  useEffect(() => {
+    hydratedRef.current = false;
+  }, [initialData]);
+
+  // =========================
+  // LOAD FROM LOCAL STORAGE
   // =========================
   useEffect(() => {
     if (!storageKey) return;
@@ -41,20 +50,20 @@ export const useFormEngine = ({
   useEffect(() => {
     if (initialData && !hydratedRef.current) {
       const mapped = mapToForm ? mapToForm(initialData) : initialData;
-      setFormData(mapped);
+      setFormData(mapped || initialState);
       hydratedRef.current = true;
     }
 
     if (!initialData) {
       hydratedRef.current = false;
     }
-  }, [initialData, mapToForm]);
+  }, [initialData, mapToForm, initialState]);
 
   // =========================
-  // AUTO SAVE (DEBOUNCED)
+  // AUTO SAVE
   // =========================
   useEffect(() => {
-    if (!autoSave || !storageKey) return;
+    if (!autoSave || !storageKey || !isDirty) return;
 
     const timer = setTimeout(() => {
       localStorage.setItem(storageKey, JSON.stringify(formData));
@@ -64,22 +73,31 @@ export const useFormEngine = ({
     setIsSaving(true);
 
     return () => clearTimeout(timer);
-  }, [formData, autoSave, storageKey]);
+  }, [formData, autoSave, storageKey, isDirty]);
 
   // =========================
-  // VALIDATION RUNNER
+  // VALIDATION (FIXED)
   // =========================
   const runValidation = useCallback(() => {
-    if (!validate) return true;
+    let result = {};
 
-    const result = validate(formData);
-    setErrors(result || {});
+    if (rules) {
+      result = coreValidate(formData, rules) || {};
+    } else if (validate) {
+      result = validate(formData) || {};
+    }
 
-    return !result || Object.keys(result).length === 0;
-  }, [formData, validate]);
+    setErrors(result);
+
+    const hasErrors = Object.keys(result).length > 0;
+
+    //console.log("VALIDATION RESULT:", result);
+
+    return !hasErrors;
+  }, [formData, rules, validate]);
 
   // =========================
-  // ASYNC VALIDATION (OPTIONAL)
+  // ASYNC VALIDATION
   // =========================
   const runAsyncValidation = useCallback(
     async (field, value) => {
@@ -110,7 +128,7 @@ export const useFormEngine = ({
   }, []);
 
   // =========================
-  // BLUR HANDLER (NEW)
+  // BLUR HANDLER
   // =========================
   const handleBlur = useCallback(
     (e) => {
@@ -121,26 +139,19 @@ export const useFormEngine = ({
         [name]: true,
       }));
 
-      // run sync validation
-      if (validate) {
-        const result = validate({
-          ...formData,
-          [name]: value,
-        });
-
-        setErrors(result || {});
+      if (rules || validate) {
+        runValidation();
       }
 
-      // run async validation
       if (asyncValidate) {
         runAsyncValidation(name, value);
       }
     },
-    [formData, validate, asyncValidate, runAsyncValidation]
+    [rules, validate, runValidation, asyncValidate, runAsyncValidation]
   );
 
   // =========================
-  // SET FIELD (custom logic)
+  // SET FIELD
   // =========================
   const setField = useCallback((name, value) => {
     setFormData((prev) => ({
@@ -152,7 +163,7 @@ export const useFormEngine = ({
   }, []);
 
   // =========================
-  // RESET
+  // RESET FORM
   // =========================
   const resetForm = useCallback(() => {
     setFormData(initialState);
@@ -168,22 +179,31 @@ export const useFormEngine = ({
   }, [initialState, storageKey]);
 
   // =========================
-  // SUBMIT (SAFE)
+  // SUBMIT (FIXED + CLEAN)
   // =========================
   const handleSubmit = useCallback(
     (e) => {
-      e.preventDefault();
+      if (e?.preventDefault) e.preventDefault();
+
+      if (typeof onSubmit !== "function") {
+        console.error("❌ onSubmit is not a function:", onSubmit);
+        return;
+      }
 
       const isValid = runValidation();
-      if (!isValid) return;
+
+      if (!isValid) {
+        //console.log("❌ FORM BLOCKED - validation failed");
+        return;
+      }
 
       if (isEdit && !isDirty) return;
 
-      const payload = mapToPayload
+      const rawPayload = mapToPayload
         ? mapToPayload(formData)
         : formData;
 
-      onSubmit(payload);
+      onSubmit(rawPayload || formData);
 
       if (!isEdit) {
         resetForm();
@@ -205,16 +225,16 @@ export const useFormEngine = ({
     setFormData,
 
     handleChange,
-    handleBlur,     // 🔥 NEW
+    handleBlur,
     handleSubmit,
 
     setField,
     resetForm,
 
     errors,
-    touched,        // 🔥 NEW
+    touched,
     isDirty,
-    isSaving,       // 🔥 NEW
+    isSaving,
 
     isEdit,
     isInactive,
