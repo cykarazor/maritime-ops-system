@@ -7,26 +7,26 @@ const SupplierTable = ({ suppliers, onEdit, onDelete, onRestore }) => {
     : suppliers?.suppliers || [];
 
   const columns = [
-    { header: "Company", accessor: "companyName" },
+    { header: "Company Name", accessor: "companyName" },
     { header: "Country", accessor: "country" },
-    { header: "Contact", accessor: "contactPerson" },
+    { header: "Contact Person", accessor: "contactPerson" },
     { header: "Email", accessor: "email" },
     { header: "Phone", accessor: "phone" },
-
+    { header: "Address", accessor: "address" },
     { header: "Currency", accessor: "currency" },
 
     {
-      header: "Terms",
+      header: "Payment Terms",
       render: (s) => `${s.paymentTerms} days`,
     },
 
     {
-      header: "Credit",
+      header: "Credit Limit",
       render: (s) => Number(s.creditLimit ?? 0).toFixed(2),
     },
 
     {
-      header: "Balance",
+      header: "Opening Balance",
       render: (s) => Number(s.openingBalance ?? 0).toFixed(2),
     },
 

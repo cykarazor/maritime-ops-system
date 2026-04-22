@@ -1,12 +1,36 @@
 import React from "react";
 import { useFormEngine } from "../hooks/useFormEngine";
+import { customerRules } from "../validators/customerRules";
 
-const CustomerForm = ({ onSubmit, initialData, onCancel }) => {
+const ErrorText = ({ error }) => {
+  if (!error) return null;
 
+  return (
+    <div className="form-error">
+      {error}
+    </div>
+  );
+};
+
+const Field = ({ label, children }) => (
+  <div className="form-group">
+    <label>
+      {label}
+    </label>
+    {children}
+  </div>
+);
+
+const CustomerForm = ({
+  onSubmit,
+  initialData,
+  onCancel,
+}) => {
   const {
     formData,
     handleChange,
     handleSubmit,
+    errors,
     isEdit,
   } = useFormEngine({
     initialState: {
@@ -19,96 +43,93 @@ const CustomerForm = ({ onSubmit, initialData, onCancel }) => {
     },
 
     initialData,
-
+    rules: customerRules,
     onSubmit,
   });
 
   const isInactive = initialData?.isDeleted;
 
   return (
-    <form onSubmit={handleSubmit} className="form-container">
-
-      {/* TITLE */}
-      <h3>{isEdit ? "Edit Customer" : "Create Customer"}</h3>
-
+    <form
+      onSubmit={handleSubmit}
+      className="form-container"
+    >
       {/* INACTIVE WARNING */}
       {isInactive && (
-        <p style={{ color: "red" }}>
-          This customer is inactive. Restore it before editing.
+        <p className="inactive-warning">
+          This customer is inactive.
+          Restore it before editing.
         </p>
       )}
 
-      {/* COMPANY NAME (PRIMARY IDENTITY) */}
-      <div className="form-group">
-        <label>Company Name</label>
+      {/* COMPANY NAME */}
+      <Field label="Company Name">
         <input
           name="companyName"
           value={formData.companyName || ""}
           onChange={handleChange}
-          required
           disabled={isInactive}
         />
-      </div>
+        <ErrorText error={errors.companyName} />
+      </Field>
 
       {/* COUNTRY */}
-      <div className="form-group">
-        <label>Country</label>
+      <Field label="Country">
         <input
           name="country"
           value={formData.country || ""}
           onChange={handleChange}
-          required
           disabled={isInactive}
         />
-      </div>
+        <ErrorText error={errors.country} />
+      </Field>
 
       {/* CONTACT PERSON */}
-      <div className="form-group">
-        <label>Contact Person</label>
+      <Field label="Contact Person">
         <input
           name="contactPerson"
           value={formData.contactPerson || ""}
           onChange={handleChange}
           disabled={isInactive}
         />
-      </div>
+        <ErrorText error={errors.contactPerson} />
+      </Field>
 
       {/* EMAIL */}
-      <div className="form-group">
-        <label>Email</label>
+      <Field label="Email">
         <input
           name="email"
           value={formData.email || ""}
           onChange={handleChange}
           disabled={isInactive}
         />
-      </div>
+        <ErrorText error={errors.email} />
+      </Field>
 
       {/* PHONE */}
-      <div className="form-group">
-        <label>Phone</label>
+      <Field label="Phone">
         <input
           name="phone"
           value={formData.phone || ""}
           onChange={handleChange}
           disabled={isInactive}
         />
-      </div>
+        <ErrorText error={errors.phone} />
+      </Field>
 
       {/* NOTES */}
-      <div className="form-group">
-        <label>Notes</label>
+      <Field label="Notes">
         <textarea
           name="notes"
           value={formData.notes || ""}
           onChange={handleChange}
           disabled={isInactive}
         />
-      </div>
+        <ErrorText error={errors.notes} />
+      </Field>
 
       {/* ACTIONS */}
       <div className="form-actions">
-
         <button
           type="button"
           className="btn btn-secondary"
@@ -122,11 +143,11 @@ const CustomerForm = ({ onSubmit, initialData, onCancel }) => {
           className="btn btn-primary"
           disabled={isInactive}
         >
-          {isEdit ? "Update Customer" : "Save Customer"}
+          {isEdit
+            ? "Update Customer"
+            : "Save Customer"}
         </button>
-
       </div>
-
     </form>
   );
 };

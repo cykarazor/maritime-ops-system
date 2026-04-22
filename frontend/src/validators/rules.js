@@ -17,3 +17,11 @@ export const dateOrder = (otherField, msg) => (value, data) =>
 
 export const email = (msg = "Invalid email") => (value) =>
   !value || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) ? null : msg;
+
+export const phone = (msg = "Invalid phone number") => (value) =>
+  !value || /^[0-9+\-\s()]{7,20}$/.test(value)
+    ? null
+    : msg;
+
+export const contactPerson = (msg = "Invalid contact person") => (value) =>
+  !value || value.trim() === "" ? msg : null;

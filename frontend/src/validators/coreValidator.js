@@ -1,18 +1,32 @@
-// validators/coreValidator.js
-
 export const validate = (data, rules) => {
   const errors = {};
 
-  Object.entries(rules).forEach(([field, validators]) => {
-    for (const rule of validators) {
-      const error = rule(data[field], data);
+  if (Array.isArray(rules)) {
+    // OLD FORMAT
+    rules.forEach((rule) => {
+      const value = data[rule.field];
 
-      if (error) {
-        errors[field] = error;
-        break; // stop at first error per field
+      rule.validators.forEach((v) => {
+        const error = v(value, data);
+        if (error) {
+          errors[rule.field] = error;
+        }
+      });
+    });
+  } else if (typeof rules === "object") {
+    // NEW FORMAT (recommended)
+    Object.entries(rules).forEach(([field, validators]) => {
+      const value = data[field];
+
+      for (const validator of validators) {
+        const error = validator(value, data);
+        if (error) {
+          errors[field] = error;
+          break;
+        }
       }
-    }
-  });
+    });
+  }
 
   return errors;
 };

@@ -1,8 +1,12 @@
 import React from "react";
 import Table from "./Table";
 
-const CustomerTable = ({ customers, onEdit, onDelete, onRestore }) => {
-
+const CustomerTable = ({
+  customers,
+  onEdit,
+  onDelete,
+  onRestore,
+}) => {
   const safeCustomers = Array.isArray(customers)
     ? customers
     : customers?.customers || [];
@@ -10,30 +14,56 @@ const CustomerTable = ({ customers, onEdit, onDelete, onRestore }) => {
   const columns = [
     {
       header: "Company Name",
-      render: (c) => c.companyName || c.name || "-",
+      render: (c) =>
+        c.companyName ||
+        c.name ||
+        "-",
     },
 
-    { header: "Country", accessor: "country" },
-    { header: "Contact Person", accessor: "contactPerson" },
-    { header: "Email", accessor: "email" },
-    { header: "Phone", accessor: "phone" },
+    {
+      header: "Country",
+      accessor: "country",
+    },
+
+    {
+      header: "Contact Person",
+      accessor: "contactPerson",
+    },
+
+    {
+      header: "Email",
+      accessor: "email",
+    },
+
+    {
+      header: "Phone",
+      accessor: "phone",
+    },
 
     {
       header: "AR Balance",
-      render: (c) => `$${Number(c.balance ?? 0).toFixed(2)}`,
+      render: (c) =>
+        `$${Number(c.balance ?? 0).toFixed(2)}`,
     },
 
     {
       header: "Status",
       render: (c) =>
         c.isActive ? (
-          <span style={{ color: "green" }}>Active</span>
+          <span className="status-active">
+            Active
+          </span>
         ) : (
-          <span style={{ color: "red" }}>Inactive</span>
+          <span className="status-inactive">
+            Inactive
+          </span>
         ),
     },
 
-    { header: "Notes", accessor: "notes" },
+    {
+      header: "Notes",
+      accessor: "notes",
+    },
   ];
 
   return (

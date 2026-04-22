@@ -1,10 +1,39 @@
+// src/components/VoyageForm.jsx
+
 import React, { useMemo } from "react";
 import { useReferenceData } from "../context/ReferenceDataContext";
 import { useFormEngine } from "../hooks/useFormEngine";
+import { voyageRules } from "../validators/voyageRules";
 
-const VoyageForm = ({ onSubmit, initialData, onCancel }) => {
+const ErrorText = ({ error }) => {
+  if (!error) return null;
 
-  const { customers, agents, loading } = useReferenceData();
+  return (
+    <div className="form-error">
+      {error}
+    </div>
+  );
+};
+
+const Field = ({ label, children }) => (
+  <div className="form-group">
+    <label>
+      {label}
+    </label>
+    {children}
+  </div>
+);
+
+const VoyageForm = ({
+  onSubmit,
+  initialData,
+  onCancel,
+}) => {
+  const {
+    customers,
+    agents,
+    loading,
+  } = useReferenceData();
 
   // =========================
   // SAFE LIST NORMALIZATION
@@ -22,12 +51,13 @@ const VoyageForm = ({ onSubmit, initialData, onCancel }) => {
   }, [agents]);
 
   // =========================
-  // FORM ENGINE (FIXED HYDRATION)
+  // FORM ENGINE
   // =========================
   const {
     formData,
     handleChange,
     handleSubmit,
+    errors,
     isEdit,
   } = useFormEngine({
     initialState: {
@@ -42,149 +72,241 @@ const VoyageForm = ({ onSubmit, initialData, onCancel }) => {
 
     initialData,
 
-    onSubmit,
+    rules: voyageRules,
 
-    // 🔥 CRITICAL FIX: normalize ALL select fields to STRING
     mapToForm: (data) => ({
-      vesselName: data.vesselName || "",
-      voyageNumber: data.voyageNumber || "",
-      loadPort: data.loadPort || "",
-      dischargePort: data.dischargePort || "",
-      status: data.status || "Scheduled",
+      vesselName:
+        data.vesselName || "",
 
-      assignedCustomer: data.assignedCustomer
-        ? String(data.assignedCustomer._id || data.assignedCustomer)
-        : "",
+      voyageNumber:
+        data.voyageNumber || "",
 
-      assignedAgent: data.assignedAgent
-        ? String(data.assignedAgent._id || data.assignedAgent)
-        : "",
+      loadPort:
+        data.loadPort || "",
+
+      dischargePort:
+        data.dischargePort || "",
+
+      status:
+        data.status || "Scheduled",
+
+      assignedCustomer:
+        data.assignedCustomer
+          ? String(
+              data.assignedCustomer._id ||
+              data.assignedCustomer
+            )
+          : "",
+
+      assignedAgent:
+        data.assignedAgent
+          ? String(
+              data.assignedAgent._id ||
+              data.assignedAgent
+            )
+          : "",
     }),
 
     mapToPayload: (data) => ({
       ...data,
-      assignedCustomer: data.assignedCustomer || null,
-      assignedAgent: data.assignedAgent || null,
+      assignedCustomer:
+        data.assignedCustomer || null,
+
+      assignedAgent:
+        data.assignedAgent || null,
     }),
+
+    onSubmit,
   });
 
+  const isInactive =
+    initialData?.isDeleted;
+
   if (loading) {
-    return <p>Loading reference data...</p>;
+    return (
+      <p>
+        Loading reference data...
+      </p>
+    );
   }
 
-  const isInactive = initialData?.isDeleted;
-
   return (
-    <form onSubmit={handleSubmit} className="form-container">
+    <form
+      onSubmit={handleSubmit}
+      className="form-container"
+    >
+      <h3>
+        {isEdit
+          ? "Edit Voyage"
+          : "Create Voyage"}
+      </h3>
 
-      <h3>{isEdit ? "Edit Voyage" : "Create Voyage"}</h3>
-
+      {/* INACTIVE WARNING */}
       {isInactive && (
-        <p style={{ color: "red" }}>
-          This voyage is inactive. Restore it before editing.
+        <p className="inactive-warning">
+          This voyage is inactive.
+          Restore it before editing.
         </p>
       )}
 
       {/* Vessel Name */}
-      <div className="form-group">
-        <label>Vessel Name</label>
+      <Field label="Vessel Name">
         <input
           name="vesselName"
-          value={formData.vesselName}
+          value={
+            formData.vesselName || ""
+          }
           onChange={handleChange}
-          required
           disabled={isInactive}
         />
-      </div>
+        <ErrorText
+          error={errors.vesselName}
+        />
+      </Field>
 
       {/* Voyage Number */}
-      <div className="form-group">
-        <label>Voyage Number</label>
+      <Field label="Voyage Number">
         <input
           name="voyageNumber"
-          value={formData.voyageNumber}
+          value={
+            formData.voyageNumber || ""
+          }
           onChange={handleChange}
-          required
           disabled={isInactive}
         />
-      </div>
+        <ErrorText
+          error={errors.voyageNumber}
+        />
+      </Field>
 
       {/* Load Port */}
-      <div className="form-group">
-        <label>Load Port</label>
+      <Field label="Load Port">
         <input
           name="loadPort"
-          value={formData.loadPort}
+          value={
+            formData.loadPort || ""
+          }
           onChange={handleChange}
           disabled={isInactive}
         />
-      </div>
+        <ErrorText
+          error={errors.loadPort}
+        />
+      </Field>
 
       {/* Discharge Port */}
-      <div className="form-group">
-        <label>Discharge Port</label>
+      <Field label="Discharge Port">
         <input
           name="dischargePort"
-          value={formData.dischargePort}
+          value={
+            formData.dischargePort || ""
+          }
           onChange={handleChange}
           disabled={isInactive}
         />
-      </div>
+        <ErrorText
+          error={
+            errors.dischargePort
+          }
+        />
+      </Field>
 
       {/* Status */}
-      <div className="form-group">
-        <label>Status</label>
+      <Field label="Status">
         <select
           name="status"
-          value={formData.status}
+          value={
+            formData.status ||
+            "Scheduled"
+          }
           onChange={handleChange}
           disabled={isInactive}
         >
-          <option value="Scheduled">Scheduled</option>
-          <option value="Loading">Loading</option>
-          <option value="In Transit">In Transit</option>
-          <option value="Discharged">Discharged</option>
-          <option value="Completed">Completed</option>
+          <option value="Scheduled">
+            Scheduled
+          </option>
+          <option value="Loading">
+            Loading
+          </option>
+          <option value="In Transit">
+            In Transit
+          </option>
+          <option value="Discharged">
+            Discharged
+          </option>
+          <option value="Completed">
+            Completed
+          </option>
         </select>
-      </div>
+        <ErrorText
+          error={errors.status}
+        />
+      </Field>
 
       {/* Customer */}
-      <div className="form-group">
-        <label>Customer</label>
+      <Field label="Customer">
         <select
           name="assignedCustomer"
-          value={String(formData.assignedCustomer || "")}
+          value={String(
+            formData.assignedCustomer ||
+              ""
+          )}
           onChange={handleChange}
-          required
           disabled={isInactive}
         >
-          <option value="">Select Customer</option>
+          <option value="">
+            Select Customer
+          </option>
+
           {customerList.map((c) => (
-            <option key={c._id} value={String(c._id)}>
-              {c.companyName || c.name}
+            <option
+              key={c._id}
+              value={String(c._id)}
+            >
+              {c.companyName ||
+                c.name}
             </option>
           ))}
         </select>
-      </div>
+
+        <ErrorText
+          error={
+            errors.assignedCustomer
+          }
+        />
+      </Field>
 
       {/* Agent */}
-      <div className="form-group">
-        <label>Agent</label>
+      <Field label="Agent">
         <select
           name="assignedAgent"
-          value={String(formData.assignedAgent || "")}
+          value={String(
+            formData.assignedAgent ||
+              ""
+          )}
           onChange={handleChange}
-          required
           disabled={isInactive}
         >
-          <option value="">Select Agent</option>
+          <option value="">
+            Select Agent
+          </option>
+
           {agentList.map((a) => (
-            <option key={a._id} value={String(a._id)}>
+            <option
+              key={a._id}
+              value={String(a._id)}
+            >
               {a.companyName}
             </option>
           ))}
         </select>
-      </div>
+
+        <ErrorText
+          error={
+            errors.assignedAgent
+          }
+        />
+      </Field>
 
       {/* ACTIONS */}
       <div className="form-actions">
@@ -201,10 +323,11 @@ const VoyageForm = ({ onSubmit, initialData, onCancel }) => {
           className="btn btn-primary"
           disabled={isInactive}
         >
-          {isEdit ? "Update Voyage" : "Save Voyage"}
+          {isEdit
+            ? "Update Voyage"
+            : "Save Voyage"}
         </button>
       </div>
-
     </form>
   );
 };

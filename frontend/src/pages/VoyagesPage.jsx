@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import Layout from "../components/Layout";
 import VoyageTable from "../components/VoyageTable";
 import VoyageForm from "../components/VoyageForm";
+import ModalForm from "../components/ui/ModalForm";
 import Pagination from "../components/Pagination";
 
 import {
@@ -13,16 +14,25 @@ import {
 } from "../utils/api";
 
 import { usePaginatedFetch } from "../hooks/usePaginatedFetch";
-import { useReferenceData } from "../hooks/useReferenceData";
 
 const VoyagesPage = () => {
   const [editingVoyage, setEditingVoyage] = useState(null);
-  const [showForm, setShowForm] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
 
+  // =========================
+  // PAGINATION
+  // =========================
   const [page, setPage] = useState(1);
   const [limit] = useState(5);
+
+  // =========================
+  // REFRESH TRIGGER
+  // =========================
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
+  // =========================
+  // FETCH VOYAGES
+  // =========================
   const {
     data: voyages,
     pages,
@@ -34,66 +44,101 @@ const VoyagesPage = () => {
     refreshTrigger,
   });
 
-  const {
-    customers,
-    suppliers,
-    voyages: voyageOptions,
-    loading: refLoading,
-    error: refError,
-  } = useReferenceData();
-
+  // =========================
+  // OPEN CREATE MODAL
+  // =========================
   const handleCreateClick = () => {
     setEditingVoyage(null);
-    setShowForm(true);
+    setModalOpen(true);
   };
 
+  // =========================
+  // OPEN EDIT MODAL
+  // =========================
   const handleEditClick = (voyage) => {
     setEditingVoyage(voyage);
-    setShowForm(true);
+    setModalOpen(true);
   };
 
-  const handleCancel = () => {
+  // =========================
+  // CLOSE MODAL
+  // =========================
+  const closeModal = () => {
     setEditingVoyage(null);
-    setShowForm(false);
+    setModalOpen(false);
   };
 
+  // =========================
+  // CREATE
+  // =========================
   const handleCreate = async (data) => {
     try {
       await createVoyage(data);
-      setRefreshTrigger((p) => p + 1);
-      setShowForm(false);
-    } catch (err) {
-      console.error("CREATE ERROR:", err);
+      setRefreshTrigger((prev) => prev + 1);
+      closeModal();
+    } catch (error) {
+      console.error(
+        "CREATE VOYAGE FAILED:",
+        error
+      );
     }
   };
 
-  const handleUpdate = async (id, data) => {
+  // =========================
+  // UPDATE
+  // =========================
+  const handleUpdate = async (data) => {
     try {
-      await updateVoyage(id, data);
-      setEditingVoyage(null);
-      setShowForm(false);
-      setRefreshTrigger((p) => p + 1);
-    } catch (err) {
-      console.error("UPDATE ERROR:", err);
+      await updateVoyage(
+        editingVoyage._id,
+        data
+      );
+
+      setRefreshTrigger((prev) => prev + 1);
+      closeModal();
+    } catch (error) {
+      console.error(
+        "UPDATE VOYAGE FAILED:",
+        error
+      );
     }
   };
 
-  const handleDelete = async (id) => {
+  // =========================
+  // DELETE
+  // =========================
+  const handleDeleteRecord = async (id) => {
     try {
-      if (!window.confirm("Deactivate this voyage?")) return;
+      if (
+        !window.confirm(
+          "Deactivate this voyage?"
+        )
+      ) {
+        return;
+      }
+
       await deleteVoyage(id);
-      setRefreshTrigger((p) => p + 1);
-    } catch (err) {
-      console.error("DELETE ERROR:", err);
+      setRefreshTrigger((prev) => prev + 1);
+    } catch (error) {
+      console.error(
+        "DELETE VOYAGE FAILED:",
+        error
+      );
     }
   };
 
-  const handleRestore = async (id) => {
+  // =========================
+  // RESTORE
+  // =========================
+  const handleRestoreRecord = async (id) => {
     try {
       await restoreVoyage(id);
-      setRefreshTrigger((p) => p + 1);
-    } catch (err) {
-      console.error("RESTORE ERROR:", err);
+      setRefreshTrigger((prev) => prev + 1);
+    } catch (error) {
+      console.error(
+        "RESTORE VOYAGE FAILED:",
+        error
+      );
     }
   };
 
@@ -101,44 +146,62 @@ const VoyagesPage = () => {
     <Layout>
       <h1>Voyages</h1>
 
-      <button className="btn btn-primary" onClick={handleCreateClick}>
+      {/* CREATE BUTTON */}
+      <button
+        className="btn btn-primary"
+        onClick={handleCreateClick}
+      >
         + Add Voyage
       </button>
 
-      {loading && <p>Loading voyages...</p>}
-      {error && <p style={{ color: "red" }}>{error}</p>}
-
-      {refLoading && <p>Loading form data...</p>}
-      {refError && <p style={{ color: "red" }}>{refError}</p>}
-
-      {showForm && (
-        <VoyageForm
-          customers={customers}
-          suppliers={suppliers}
-          voyages={voyageOptions}
-          initialData={editingVoyage}
-          onSubmit={(data) => {
-            if (editingVoyage && editingVoyage._id) {
-              return handleUpdate(editingVoyage._id, data);
-            }
-            return handleCreate(data);
-          }}
-          onCancel={handleCancel}
-        />
+      {/* LOADING / ERROR */}
+      {loading && (
+        <p>Loading voyages...</p>
       )}
 
+      {error && (
+        <p style={{ color: "red" }}>
+          {error}
+        </p>
+      )}
+
+      {/* TABLE */}
       <VoyageTable
         voyages={voyages}
         onEdit={handleEditClick}
-        onDelete={handleDelete}
-        onRestore={handleRestore}
+        onDelete={handleDeleteRecord}
+        onRestore={handleRestoreRecord}
       />
 
+      {/* PAGINATION */}
       <Pagination
         page={page}
         pages={pages}
         onPageChange={setPage}
       />
+
+      {/* MODAL FORM */}
+      <ModalForm
+        isOpen={modalOpen}
+        onClose={closeModal}
+        title={
+          editingVoyage
+            ? "Edit Voyage"
+            : "Create Voyage"
+        }
+        onSubmit={() => {}}
+        size="lg"
+      >
+        <VoyageForm
+          initialData={editingVoyage}
+          onSubmit={
+            editingVoyage
+              ? handleUpdate
+              : handleCreate
+          }
+          onCancel={closeModal}
+        />
+      </ModalForm>
     </Layout>
   );
 };

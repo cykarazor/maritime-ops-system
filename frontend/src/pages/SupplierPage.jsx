@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import Layout from "../components/Layout";
 import SupplierTable from "../components/SupplierTable";
 import SupplierForm from "../components/SupplierForm";
+import ModalForm from "../components/ui/ModalForm";
 import Pagination from "../components/Pagination";
 
 import {
@@ -9,14 +10,14 @@ import {
   createSupplier,
   updateSupplier,
   deleteSupplier,
-  restoreSupplier
+  restoreSupplier,
 } from "../utils/api";
 
 import { usePaginatedFetch } from "../hooks/usePaginatedFetch";
 
 const SupplierPage = () => {
   const [editingSupplier, setEditingSupplier] = useState(null);
-  const [showForm, setShowForm] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
 
   // =========================
   // PAGINATION
@@ -30,35 +31,41 @@ const SupplierPage = () => {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // =========================
-  // FETCH SUPPLIERS (HOOK)
+  // FETCH SUPPLIERS
   // =========================
   const {
     data: suppliers,
     pages,
     loading,
-    error
+    error,
   } = usePaginatedFetch(getSuppliers, {
     page,
     limit,
-    refreshTrigger
+    refreshTrigger,
   });
 
   // =========================
-  // HANDLERS
+  // OPEN CREATE
   // =========================
   const handleCreateClick = () => {
     setEditingSupplier(null);
-    setShowForm(true);
+    setModalOpen(true);
   };
 
+  // =========================
+  // OPEN EDIT
+  // =========================
   const handleEditClick = (supplier) => {
     setEditingSupplier(supplier);
-    setShowForm(true);
+    setModalOpen(true);
   };
 
-  const handleCancel = () => {
+  // =========================
+  // CLOSE MODAL
+  // =========================
+  const closeModal = () => {
     setEditingSupplier(null);
-    setShowForm(false);
+    setModalOpen(false);
   };
 
   // =========================
@@ -67,49 +74,49 @@ const SupplierPage = () => {
   const handleCreate = async (data) => {
     try {
       await createSupplier(data);
-      setRefreshTrigger((prev) => prev + 1);
-      setShowForm(false);
-    } catch (error) {
-      console.error("CREATE ERROR:", error);
+      setRefreshTrigger((p) => p + 1);
+      closeModal();
+    } catch (err) {
+      console.error("CREATE SUPPLIER FAILED:", err);
     }
   };
 
   // =========================
   // UPDATE
   // =========================
-  const handleUpdate = async (id, data) => {
+  const handleUpdate = async (data) => {
     try {
-      await updateSupplier(id, data);
-      setEditingSupplier(null);
-      setShowForm(false);
-      setRefreshTrigger((prev) => prev + 1);
-    } catch (error) {
-      console.error("UPDATE ERROR:", error);
+      await updateSupplier(editingSupplier._id, data);
+      setRefreshTrigger((p) => p + 1);
+      closeModal();
+    } catch (err) {
+      console.error("UPDATE SUPPLIER FAILED:", err);
     }
   };
 
   // =========================
   // DELETE
   // =========================
-  const handleDeactivate = async (id) => {
+  const handleDeleteRecord = async (id) => {
     try {
       if (!window.confirm("Deactivate this supplier?")) return;
+
       await deleteSupplier(id);
-      setRefreshTrigger((prev) => prev + 1);
-    } catch (error) {
-      console.error("DELETE ERROR:", error);
+      setRefreshTrigger((p) => p + 1);
+    } catch (err) {
+      console.error("DELETE SUPPLIER FAILED:", err);
     }
   };
 
   // =========================
   // RESTORE
   // =========================
-  const handleRestore = async (id) => {
+  const handleRestoreRecord = async (id) => {
     try {
       await restoreSupplier(id);
-      setRefreshTrigger((prev) => prev + 1);
-    } catch (error) {
-      console.error("RESTORE ERROR:", error);
+      setRefreshTrigger((p) => p + 1);
+    } catch (err) {
+      console.error("RESTORE SUPPLIER FAILED:", err);
     }
   };
 
@@ -117,42 +124,35 @@ const SupplierPage = () => {
     <Layout>
       <h1>Suppliers</h1>
 
-      {/* CREATE BUTTON */}
       <button className="btn btn-primary" onClick={handleCreateClick}>
         + Add Supplier
       </button>
 
-      {/* LOADING / ERROR */}
       {loading && <p>Loading suppliers...</p>}
       {error && <p style={{ color: "red" }}>{error}</p>}
 
-      {/* FORM */}
-      {showForm && (
-        <SupplierForm
-          initialData={editingSupplier}
-          onSubmit={
-            editingSupplier
-              ? (data) => handleUpdate(editingSupplier._id, data)
-              : handleCreate
-          }
-          onCancel={handleCancel}
-        />
-      )}
-
-      {/* TABLE */}
       <SupplierTable
         suppliers={suppliers}
         onEdit={handleEditClick}
-        onDelete={handleDeactivate}
-        onRestore={handleRestore}
+        onDelete={handleDeleteRecord}
+        onRestore={handleRestoreRecord}
       />
 
-      {/* PAGINATION */}
-      <Pagination
-        page={page}
-        pages={pages}
-        onPageChange={setPage}
-      />
+      <Pagination page={page} pages={pages} onPageChange={setPage} />
+
+      <ModalForm
+        isOpen={modalOpen}
+        onClose={closeModal}
+        title={editingSupplier ? "Edit Supplier" : "Create Supplier"}
+        onSubmit={() => {}}
+        size="lg"
+      >
+        <SupplierForm
+          initialData={editingSupplier}
+          onSubmit={editingSupplier ? handleUpdate : handleCreate}
+          onCancel={closeModal}
+        />
+      </ModalForm>
     </Layout>
   );
 };

@@ -1,10 +1,9 @@
-// src/pages/CargoPage.jsx
-import React, { useState, useEffect } from "react";
+import { useState } from "react";
 import Layout from "../components/Layout";
 import CargoTable from "../components/CargoTable";
 import CargoForm from "../components/CargoForm";
+import ModalForm from "../components/ui/ModalForm";
 import Pagination from "../components/Pagination";
-import { usePaginatedFetch } from "../hooks/usePaginatedFetch";
 
 import {
   getCargo,
@@ -12,90 +11,61 @@ import {
   updateCargo,
   deleteCargo,
   restoreCargo,
-  getCustomers,
-  getVoyages
 } from "../utils/api";
 
+import { usePaginatedFetch } from "../hooks/usePaginatedFetch";
+
 const CargoPage = () => {
-  //const [cargo, setCargo] = useState([]);
   const [editing, setEditing] = useState(null);
-
-  // ✅ STANDARDIZED UI STATE
-  const [showForm, setShowForm] = useState(false);
-
-  const [customers, setCustomers] = useState([]);
-  const [voyages, setVoyages] = useState([]);
+  const [modalOpen, setModalOpen] = useState(false);
 
   // =========================
   // PAGINATION
   // =========================
   const [page, setPage] = useState(1);
-  //const [pages, setPages] = useState(1);
   const [limit] = useState(5);
 
   // =========================
-  // REFRESH
+  // REFRESH TRIGGER
   // =========================
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // =========================
-// FETCH CARGO
-// =========================
-const {
-  data: cargo,
-  pages,
-  loading,
-  error
-} = usePaginatedFetch(getCargo, { page, limit, refreshTrigger });
-
-// =========================
-// FETCH CUSTOMERS
-// =========================
-useEffect(() => {
-  const fetchCustomers = async () => {
-    try {
-      const response = await getCustomers();
-      setCustomers(response.data || []);
-    } catch (error) {
-      console.error("Error fetching customers:", error);
-    }
-  };
-
-  fetchCustomers();
-}, []);
-
-// =========================
-// FETCH VOYAGES
-// =========================
-useEffect(() => {
-  const fetchVoyages = async () => {
-    try {
-      const response = await getVoyages();
-      setVoyages(response.data || []);
-    } catch (error) {
-      console.error("Error fetching voyages:", error);
-    }
-  };
-
-  fetchVoyages();
-}, []);
+  // FETCH CARGO
+  // =========================
+  const {
+    data: cargo,
+    pages,
+    loading,
+    error,
+  } = usePaginatedFetch(getCargo, {
+    page,
+    limit,
+    refreshTrigger,
+  });
 
   // =========================
-  // HANDLERS (STANDARDIZED)
+  // OPEN CREATE MODAL
   // =========================
   const handleCreateClick = () => {
     setEditing(null);
-    setShowForm(true);
+    setModalOpen(true);
   };
 
+  // =========================
+  // OPEN EDIT MODAL
+  // =========================
   const handleEditClick = (item) => {
     setEditing(item);
-    setShowForm(true);
+    setModalOpen(true);
   };
 
-  const handleCancel = () => {
+  // =========================
+  // CLOSE MODAL
+  // =========================
+  const closeModal = () => {
     setEditing(null);
-    setShowForm(false);
+    setModalOpen(false);
   };
 
   // =========================
@@ -105,48 +75,60 @@ useEffect(() => {
     try {
       await createCargo(data);
       setRefreshTrigger((prev) => prev + 1);
-      setShowForm(false);
-    } catch (err) {
-      console.error("Create cargo failed:", err);
+      closeModal();
+    } catch (error) {
+      console.error(
+        "CREATE CARGO FAILED:",
+        error
+      );
     }
   };
 
   // =========================
   // UPDATE
   // =========================
-  const handleUpdate = async (id, data) => {
+  const handleUpdate = async (data) => {
     try {
-      await updateCargo(id, data);
-      setEditing(null);
-      setShowForm(false);
+      await updateCargo(editing._id, data);
       setRefreshTrigger((prev) => prev + 1);
-    } catch (err) {
-      console.error("Update cargo failed:", err);
+      closeModal();
+    } catch (error) {
+      console.error(
+        "UPDATE CARGO FAILED:",
+        error
+      );
     }
   };
 
   // =========================
   // DELETE
   // =========================
-  const handleDelete = async (id) => {
+  const handleDeleteRecord = async (id) => {
     try {
       if (!window.confirm("Deactivate this cargo?")) return;
+
       await deleteCargo(id);
       setRefreshTrigger((prev) => prev + 1);
-    } catch (err) {
-      console.error("Delete cargo failed:", err);
+    } catch (error) {
+      console.error(
+        "DELETE CARGO FAILED:",
+        error
+      );
     }
   };
 
   // =========================
   // RESTORE
   // =========================
-  const handleRestore = async (id) => {
+  const handleRestoreRecord = async (id) => {
     try {
       await restoreCargo(id);
       setRefreshTrigger((prev) => prev + 1);
-    } catch (err) {
-      console.error("Restore cargo failed:", err);
+    } catch (error) {
+      console.error(
+        "RESTORE CARGO FAILED:",
+        error
+      );
     }
   };
 
@@ -155,34 +137,28 @@ useEffect(() => {
       <h1>Cargo (Revenue)</h1>
 
       {/* CREATE BUTTON */}
-      <button className="btn btn-primary" onClick={handleCreateClick}>
+      <button
+        className="btn btn-primary"
+        onClick={handleCreateClick}
+      >
         + Add Cargo
       </button>
 
-      {/* FORM (CONTROLLED) */}
-      {showForm && (
-        <CargoForm
-          onSubmit={
-            editing
-              ? (data) => handleUpdate(editing._id, data)
-              : handleCreate
-          }
-          initialData={editing}
-          onCancel={handleCancel}
-          customers={customers}
-          voyages={voyages}
-        />
-      )}
-
+      {/* LOADING / ERROR */}
       {loading && <p>Loading cargo...</p>}
-      {error && <p style={{ color: "red" }}>{error}</p>}
+
+      {error && (
+        <p style={{ color: "red" }}>
+          {error}
+        </p>
+      )}
 
       {/* TABLE */}
       <CargoTable
         cargo={cargo}
         onEdit={handleEditClick}
-        onDelete={handleDelete}
-        onRestore={handleRestore}
+        onDelete={handleDeleteRecord}
+        onRestore={handleRestoreRecord}
       />
 
       {/* PAGINATION */}
@@ -191,6 +167,29 @@ useEffect(() => {
         pages={pages}
         onPageChange={setPage}
       />
+
+      {/* MODAL FORM */}
+      <ModalForm
+        isOpen={modalOpen}
+        onClose={closeModal}
+        title={
+          editing
+            ? "Edit Cargo"
+            : "Create Cargo"
+        }
+        onSubmit={() => {}}
+        size="lg"
+      >
+        <CargoForm
+          initialData={editing}
+          onSubmit={
+            editing
+              ? handleUpdate
+              : handleCreate
+          }
+          onCancel={closeModal}
+        />
+      </ModalForm>
     </Layout>
   );
 };

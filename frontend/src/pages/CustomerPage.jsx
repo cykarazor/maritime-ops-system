@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import Layout from "../components/Layout";
 import CustomerTable from "../components/CustomerTable";
 import CustomerForm from "../components/CustomerForm";
+import ModalForm from "../components/ui/ModalForm";
 import Pagination from "../components/Pagination";
 
 import {
@@ -9,14 +10,14 @@ import {
   createCustomer,
   updateCustomer,
   deleteCustomer,
-  restoreCustomer
+  restoreCustomer,
 } from "../utils/api";
 
 import { usePaginatedFetch } from "../hooks/usePaginatedFetch";
 
 const CustomerPage = () => {
   const [editingCustomer, setEditingCustomer] = useState(null);
-  const [showForm, setShowForm] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
 
   // =========================
   // PAGINATION
@@ -30,35 +31,41 @@ const CustomerPage = () => {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // =========================
-  // FETCH CUSTOMERS (HOOK)
+  // FETCH CUSTOMERS
   // =========================
   const {
     data: customers,
     pages,
     loading,
-    error
+    error,
   } = usePaginatedFetch(getCustomers, {
     page,
     limit,
-    refreshTrigger
+    refreshTrigger,
   });
 
   // =========================
-  // HANDLERS
+  // OPEN CREATE MODAL
   // =========================
   const handleCreateClick = () => {
     setEditingCustomer(null);
-    setShowForm(true);
+    setModalOpen(true);
   };
 
+  // =========================
+  // OPEN EDIT MODAL
+  // =========================
   const handleEditClick = (customer) => {
     setEditingCustomer(customer);
-    setShowForm(true);
+    setModalOpen(true);
   };
 
-  const handleCancel = () => {
+  // =========================
+  // CLOSE MODAL
+  // =========================
+  const closeModal = () => {
     setEditingCustomer(null);
-    setShowForm(false);
+    setModalOpen(false);
   };
 
   // =========================
@@ -68,48 +75,48 @@ const CustomerPage = () => {
     try {
       await createCustomer(data);
       setRefreshTrigger((prev) => prev + 1);
-      setShowForm(false);
+      closeModal();
     } catch (error) {
-      console.error("CREATE ERROR:", error);
+      console.error("CREATE CUSTOMER FAILED:", error);
     }
   };
 
   // =========================
   // UPDATE
   // =========================
-  const handleUpdate = async (id, data) => {
+  const handleUpdate = async (data) => {
     try {
-      await updateCustomer(id, data);
-      setEditingCustomer(null);
-      setShowForm(false);
+      await updateCustomer(editingCustomer._id, data);
       setRefreshTrigger((prev) => prev + 1);
+      closeModal();
     } catch (error) {
-      console.error("UPDATE ERROR:", error);
+      console.error("UPDATE CUSTOMER FAILED:", error);
     }
   };
 
   // =========================
   // DELETE
   // =========================
-  const handleDeactivate = async (id) => {
+  const handleDeleteRecord = async (id) => {
     try {
       if (!window.confirm("Deactivate this customer?")) return;
+
       await deleteCustomer(id);
       setRefreshTrigger((prev) => prev + 1);
     } catch (error) {
-      console.error("DELETE ERROR:", error);
+      console.error("DELETE CUSTOMER FAILED:", error);
     }
   };
 
   // =========================
   // RESTORE
   // =========================
-  const handleRestore = async (id) => {
+  const handleRestoreRecord = async (id) => {
     try {
       await restoreCustomer(id);
       setRefreshTrigger((prev) => prev + 1);
     } catch (error) {
-      console.error("RESTORE ERROR:", error);
+      console.error("RESTORE CUSTOMER FAILED:", error);
     }
   };
 
@@ -118,33 +125,27 @@ const CustomerPage = () => {
       <h1>Customers</h1>
 
       {/* CREATE BUTTON */}
-      <button className="btn btn-primary" onClick={handleCreateClick}>
+      <button
+        className="btn btn-primary"
+        onClick={handleCreateClick}
+      >
         + Add Customer
       </button>
 
       {/* LOADING / ERROR */}
       {loading && <p>Loading customers...</p>}
-      {error && <p style={{ color: "red" }}>{error}</p>}
-
-      {/* FORM */}
-      {showForm && (
-        <CustomerForm
-          onSubmit={
-            editingCustomer
-              ? (data) => handleUpdate(editingCustomer._id, data)
-              : handleCreate
-          }
-          initialData={editingCustomer}
-          onCancel={handleCancel}
-        />
+      {error && (
+        <p style={{ color: "red" }}>
+          {error}
+        </p>
       )}
 
       {/* TABLE */}
       <CustomerTable
         customers={customers}
         onEdit={handleEditClick}
-        onDelete={handleDeactivate}
-        onRestore={handleRestore}
+        onDelete={handleDeleteRecord}
+        onRestore={handleRestoreRecord}
       />
 
       {/* PAGINATION */}
@@ -153,6 +154,29 @@ const CustomerPage = () => {
         pages={pages}
         onPageChange={setPage}
       />
+
+      {/* MODAL FORM */}
+      <ModalForm
+        isOpen={modalOpen}
+        onClose={closeModal}
+        title={
+          editingCustomer
+            ? "Edit Customer"
+            : "Create Customer"
+        }
+        onSubmit={() => {}}
+        size="lg"
+      >
+        <CustomerForm
+          initialData={editingCustomer}
+          onSubmit={
+            editingCustomer
+              ? handleUpdate
+              : handleCreate
+          }
+          onCancel={closeModal}
+        />
+      </ModalForm>
     </Layout>
   );
 };

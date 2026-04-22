@@ -1,16 +1,43 @@
 import React, { useMemo } from "react";
 import { useReferenceData } from "../context/ReferenceDataContext";
 import { useFormEngine } from "../hooks/useFormEngine";
+import { cargoRules } from "../validators/cargoRules";
 
-const CargoForm = ({ initialData, onSubmit, onCancel }) => {
+const ErrorText = ({ error }) => {
+  if (!error) return null;
 
-  const { voyages: refVoyages, customers: refCustomers, loading } =
-    useReferenceData();
+  return (
+    <div className="form-error">
+      {error}
+    </div>
+  );
+};
+
+const Field = ({ label, children }) => (
+  <div className="form-group">
+    <label>
+      {label}
+    </label>
+    {children}
+  </div>
+);
+
+const CargoForm = ({
+  initialData,
+  onSubmit,
+  onCancel,
+}) => {
+  const {
+    voyages,
+    customers,
+    loading,
+  } = useReferenceData();
 
   const {
     formData,
     handleChange,
     handleSubmit,
+    errors,
     isEdit,
   } = useFormEngine({
     initialState: {
@@ -26,144 +53,195 @@ const CargoForm = ({ initialData, onSubmit, onCancel }) => {
 
     initialData,
 
-    // ✅ FIX: proper edit mapping
+    rules: cargoRules,
+
+    // EDIT MODE SAFE MAPPING
     mapToForm: (data) => ({
-      voyage: data.voyage?._id || data.voyage || "",
-      customer: data.customer?._id || data.customer || "",
-      cargoType: data.cargoType || "Cement",
-      quantity: data.quantity || 0,
-      unit: data.unit || "MT",
-      rate: data.rate || 0,
+      voyage: data?.voyage?._id || data?.voyage || "",
+      customer: data?.customer?._id || data?.customer || "",
+      cargoType: data?.cargoType || "Cement",
+      quantity: data?.quantity || 0,
+      unit: data?.unit || "MT",
+      rate: data?.rate || 0,
       totalRevenue:
-        Number(data.quantity || 0) * Number(data.rate || 0),
-      notes: data.notes || "",
+        Number(data?.quantity || 0) *
+        Number(data?.rate || 0),
+      notes: data?.notes || "",
     }),
 
-    // ✅ payload mapping
+    // SUBMIT SAFE PAYLOAD
     mapToPayload: (data) => ({
       ...data,
       quantity: Number(data.quantity || 0),
       rate: Number(data.rate || 0),
       totalRevenue:
-        Number(data.quantity || 0) * Number(data.rate || 0),
+        Number(data.quantity || 0) *
+        Number(data.rate || 0),
     }),
 
     onSubmit,
   });
 
-  const computedTotal = useMemo(() => {
-    return Number(formData.quantity || 0) *
-           Number(formData.rate || 0);
-  }, [formData.quantity, formData.rate]);
+  const isInactive = initialData?.isDeleted;
 
-  if (loading) return <p>Loading reference data...</p>;
+  const computedTotal = useMemo(() => {
+    return (
+      Number(formData.quantity || 0) *
+      Number(formData.rate || 0)
+    );
+  }, [
+    formData.quantity,
+    formData.rate,
+  ]);
+
+  if (loading) {
+    return <p>Loading reference data...</p>;
+  }
 
   return (
-    <form onSubmit={handleSubmit} className="form-container">
+    <form
+      onSubmit={handleSubmit}
+      className="form-container"
+    >
+      <h3>
+        {isEdit
+          ? "Edit Cargo"
+          : "Create Cargo"}
+      </h3>
 
-      <h3>{isEdit ? "Edit Cargo" : "Create Cargo"}</h3>
+      {/* INACTIVE WARNING */}
+      {isInactive && (
+        <p className="inactive-warning">
+          This cargo record is inactive.
+          Restore it before editing.
+        </p>
+      )}
 
-      {/* Voyage */}
-      <div className="form-group">
-        <label>Voyage</label>
+      {/* VOYAGE */}
+      <Field label="Voyage">
         <select
           name="voyage"
           value={formData.voyage || ""}
           onChange={handleChange}
-          required
+          disabled={isInactive}
         >
-          <option value="">Select Voyage</option>
-          {refVoyages.active.map((v) => (
-            <option key={v._id} value={v._id}>
+          <option value="">
+            Select Voyage
+          </option>
+
+          {(voyages?.active || []).map((v) => (
+            <option
+              key={v._id}
+              value={v._id}
+            >
               {v.vesselName} - {v.voyageNumber}
             </option>
           ))}
         </select>
-      </div>
 
-      {/* Customer */}
-      <div className="form-group">
-        <label>Customer</label>
+        <ErrorText error={errors.voyage} />
+      </Field>
+
+      {/* CUSTOMER */}
+      <Field label="Customer">
         <select
           name="customer"
           value={formData.customer || ""}
           onChange={handleChange}
-          required
+          disabled={isInactive}
         >
-          <option value="">Select Customer</option>
-          {refCustomers.active.map((c) => (
-            <option key={c._id} value={c._id}>
+          <option value="">
+            Select Customer
+          </option>
+
+          {(customers?.active || []).map((c) => (
+            <option
+              key={c._id}
+              value={c._id}
+            >
               {c.companyName || c.name}
             </option>
           ))}
         </select>
-      </div>
 
-      {/* Cargo Type */}
-      <div className="form-group">
-        <label>Cargo Type</label>
+        <ErrorText error={errors.customer} />
+      </Field>
+
+      {/* CARGO TYPE */}
+      <Field label="Cargo Type">
         <input
           name="cargoType"
           value={formData.cargoType || ""}
           onChange={handleChange}
+          disabled={isInactive}
         />
-      </div>
 
-      {/* Quantity */}
-      <div className="form-group">
-        <label>Quantity</label>
+        <ErrorText error={errors.cargoType} />
+      </Field>
+
+      {/* QUANTITY */}
+      <Field label="Quantity">
         <input
           type="number"
           name="quantity"
           value={formData.quantity || 0}
           onChange={handleChange}
+          disabled={isInactive}
         />
-      </div>
 
-      {/* Unit */}
-      <div className="form-group">
-        <label>Unit</label>
+        <ErrorText error={errors.quantity} />
+      </Field>
+
+      {/* UNIT */}
+      <Field label="Unit">
         <select
           name="unit"
           value={formData.unit || "MT"}
           onChange={handleChange}
+          disabled={isInactive}
         >
           <option value="MT">MT</option>
           <option value="KG">KG</option>
         </select>
-      </div>
 
-      {/* Rate */}
-      <div className="form-group">
-        <label>Rate</label>
+        <ErrorText error={errors.unit} />
+      </Field>
+
+      {/* RATE */}
+      <Field label="Rate">
         <input
           type="number"
           name="rate"
           value={formData.rate || 0}
           onChange={handleChange}
+          disabled={isInactive}
         />
-      </div>
 
-      {/* Total */}
-      <div className="form-group">
-        <label>Total Revenue</label>
+        <ErrorText error={errors.rate} />
+      </Field>
+
+      {/* TOTAL REVENUE */}
+      <Field label="Total Revenue">
         <input
           value={computedTotal}
           readOnly
+          disabled
         />
-      </div>
+      </Field>
 
-      {/* Notes */}
-      <div className="form-group">
-        <label>Notes</label>
+      {/* NOTES */}
+      <Field label="Notes">
         <textarea
           name="notes"
           value={formData.notes || ""}
           onChange={handleChange}
+          disabled={isInactive}
         />
-      </div>
 
-      {/* Actions */}
+        <ErrorText error={errors.notes} />
+      </Field>
+
+      {/* ACTIONS */}
       <div className="form-actions">
         <button
           type="button"
@@ -173,11 +251,16 @@ const CargoForm = ({ initialData, onSubmit, onCancel }) => {
           Cancel
         </button>
 
-        <button type="submit" className="btn btn-primary">
-          {isEdit ? "Update Cargo" : "Save Cargo"}
+        <button
+          type="submit"
+          className="btn btn-primary"
+          disabled={isInactive}
+        >
+          {isEdit
+            ? "Update Cargo"
+            : "Save Cargo"}
         </button>
       </div>
-
     </form>
   );
 };
