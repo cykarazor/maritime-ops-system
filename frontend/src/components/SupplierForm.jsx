@@ -1,6 +1,7 @@
 import React from "react";
 import { useFormEngine } from "../hooks/useFormEngine";
 import { supplierRules } from "../validators/supplierRules";
+import { NumericInput } from "./NumericInput";
 
 const ErrorText = ({ error }) => {
   if (!error) return null;
@@ -57,9 +58,9 @@ const SupplierForm = ({ initialData, onSubmit, onCancel }) => {
 
       currency: data.currency || "USD",
 
-      paymentTerms: Number(data.paymentTerms) || 0,
-      creditLimit: Number(data.creditLimit) || 0,
-      openingBalance: Number(data.openingBalance) || 0,
+      paymentTerms: data.paymentTerms ?? null,
+      creditLimit: data.creditLimit ?? null,
+      openingBalance: data.openingBalance ?? null,
 
       notes: data.notes?.trim() || "",
     }),
@@ -162,36 +163,42 @@ const SupplierForm = ({ initialData, onSubmit, onCancel }) => {
 
       {/* PAYMENT TERMS */}
       <Field label="Payment Terms (days)">
-        <input
-          type="number"
+        <NumericInput
           name="paymentTerms"
-          value={formData.paymentTerms || 0}
+          value={formData.paymentTerms}
           onChange={handleChange}
-          disabled={isInactive}
+          onBlur={() => {}}
+          //label="Payment Terms (days)"
+          decimals={0}
+          nullable={false}
         />
         <ErrorText error={errors.paymentTerms} />
       </Field>
 
       {/* CREDIT LIMIT */}
       <Field label="Credit Limit">
-        <input
-          type="number"
+        <NumericInput
           name="creditLimit"
-          value={formData.creditLimit || 0}
+          value={formData.creditLimit}
           onChange={handleChange}
-          disabled={isInactive}
+          onBlur={() => {}}
+          //label="Credit Limit"
+          decimals={2}
+          nullable
         />
         <ErrorText error={errors.creditLimit} />
       </Field>
 
       {/* OPENING BALANCE */}
       <Field label="Opening Balance">
-        <input
-          type="number"
+        <NumericInput
           name="openingBalance"
-          value={formData.openingBalance || 0}
+          value={formData.openingBalance}
           onChange={handleChange}
-          disabled={isInactive}
+          onBlur={() => {}}
+          //label="Opening Balance"
+          decimals={2}
+          nullable
         />
         <ErrorText error={errors.openingBalance} />
       </Field>

@@ -2,6 +2,7 @@ import React, { useMemo } from "react";
 import { useReferenceData } from "../context/ReferenceDataContext";
 import { useFormEngine } from "../hooks/useFormEngine";
 import { cargoRules } from "../validators/cargoRules";
+import { NumericInput } from "./NumericInput";
 
 const ErrorText = ({ error }) => {
   if (!error) return null;
@@ -60,12 +61,12 @@ const CargoForm = ({
       voyage: data?.voyage?._id || data?.voyage || "",
       customer: data?.customer?._id || data?.customer || "",
       cargoType: data?.cargoType || "Cement",
-      quantity: data?.quantity || 0,
+      quantity: data.quantity ?? null,
       unit: data?.unit || "MT",
-      rate: data?.rate || 0,
+      rate: data.rate ?? null,
       totalRevenue:
-        Number(data?.quantity || 0) *
-        Number(data?.rate || 0),
+        Number(data.quantity ?? null) *
+        Number(data.rate ?? null),
       notes: data?.notes || "",
     }),
 
@@ -181,14 +182,15 @@ const CargoForm = ({
 
       {/* QUANTITY */}
       <Field label="Quantity">
-        <input
-          type="number"
+        <NumericInput
           name="quantity"
-          value={formData.quantity || 0}
+          value={formData.quantity}
           onChange={handleChange}
-          disabled={isInactive}
+          onBlur={() => {}}
+          //label="Quantity"
+          decimals={0}
+          nullable={false}
         />
-
         <ErrorText error={errors.quantity} />
       </Field>
 
@@ -209,14 +211,15 @@ const CargoForm = ({
 
       {/* RATE */}
       <Field label="Rate">
-        <input
-          type="number"
+        <NumericInput
           name="rate"
-          value={formData.rate || 0}
+          value={formData.rate}
           onChange={handleChange}
-          disabled={isInactive}
+          onBlur={() => {}}
+          //label="Rate"
+          decimals={0}
+          nullable={false}
         />
-
         <ErrorText error={errors.rate} />
       </Field>
 

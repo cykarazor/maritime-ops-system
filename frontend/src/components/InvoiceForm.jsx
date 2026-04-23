@@ -1,6 +1,7 @@
 import React from "react";
 import { useFormEngine } from "../hooks/useFormEngine";
 import {invoiceRules } from "../validators/invoiceRules";
+import { NumericInput } from "./NumericInput";
 
 const Field = ({ label, children }) => (
   <div className="form-group">
@@ -60,8 +61,8 @@ const InvoiceForm = ({
 
     mapToPayload: (data) => ({
       ...data,
-      amount: Number(data.amount || 0),
-      amountPaid: Number(data.amountPaid || 0),
+      amount: data.amount ?? null,
+      amountPaid: data.amountPaid ?? null,
       voyage: data.voyage ? String(data.voyage) : null,
       customer: data.type === "AR" ? String(data.customer || "") : null,
       supplier: data.type === "AP" ? String(data.supplier || "") : null,
@@ -159,21 +160,27 @@ const InvoiceForm = ({
       </Field>
 
       <Field label="Amount">
-        <input
-          type="number"
+        <NumericInput
           name="amount"
-          value={formData.amount || ""}
+          value={formData.amount}
           onChange={handleChange}
+          onBlur={() => {}}
+          //label="amount"
+          decimals={0}
+          nullable={false}
         />
         <ErrorText error={errors.amount} />
       </Field>
 
       <Field label="Amount Paid">
-        <input
-          type="number"
+        <NumericInput
           name="amountPaid"
-          value={formData.amountPaid || ""}
+          value={formData.amountPaid}
           onChange={handleChange}
+          onBlur={() => {}}
+          //label="Amount Paid"
+          decimals={0}
+          nullable={false}
         />
       </Field>
 

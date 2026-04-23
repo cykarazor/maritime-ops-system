@@ -12,6 +12,7 @@ export const useFormEngine = ({
   asyncValidate,
   storageKey,
   autoSave = true,
+  fieldConfig = {},
 }) => {
   const [formData, setFormData] = useState(initialState);
   const [errors, setErrors] = useState({});
@@ -117,15 +118,29 @@ export const useFormEngine = ({
   // CHANGE HANDLER
   // =========================
   const handleChange = useCallback((e) => {
-    const { name, value } = e.target;
+  const { name, value } = e.target;
 
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+  const config = fieldConfig?.[name];
 
-    setIsDirty(true);
-  }, []);
+  let parsedValue = value;
+
+  // 🧠 NUMERIC HANDLING
+  if (config?.type === "number") {
+    if (value === "") {
+      parsedValue = null;
+    } else {
+      const num = Number(value);
+      parsedValue = Number.isNaN(num) ? null : num;
+    }
+  }
+
+  setFormData((prev) => ({
+    ...prev,
+    [name]: parsedValue,
+  }));
+
+  setIsDirty(true);
+}, [fieldConfig]);
 
   // =========================
   // BLUR HANDLER
@@ -154,13 +169,26 @@ export const useFormEngine = ({
   // SET FIELD
   // =========================
   const setField = useCallback((name, value) => {
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+  const config = fieldConfig?.[name];
 
-    setIsDirty(true);
-  }, []);
+  let parsedValue = value;
+
+  if (config?.type === "number") {
+    if (value === "") {
+      parsedValue = null;
+    } else {
+      const num = Number(value);
+      parsedValue = Number.isNaN(num) ? null : num;
+    }
+  }
+
+  setFormData((prev) => ({
+    ...prev,
+    [name]: parsedValue,
+  }));
+
+  setIsDirty(true);
+}, [fieldConfig]);
 
   // =========================
   // RESET FORM
